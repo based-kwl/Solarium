@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <string>
 
-namespace Solarium {
+namespace Solarium
+{
 
 	static void writeLog(const char* prepend, const char* message, va_list args)
 	{

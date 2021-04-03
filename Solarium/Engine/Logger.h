@@ -2,9 +2,11 @@
 #include <../Typedef.h>
 //Logger functions
 
-namespace Solarium {
+namespace Solarium
+{
 
-	class Logger {
+	class Logger
+	{
 	public:
 		static void Trace(const char* message, ...);
 		static void Log(const char* message, ...);
