@@ -1,3 +1,0 @@
-# Shadders
-
-Shatty Shadders.
