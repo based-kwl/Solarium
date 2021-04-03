@@ -1,5 +1,5 @@
 #pragma once
-
+#include <../Typedef.h>
 //Logger functions
 
 namespace Solarium {

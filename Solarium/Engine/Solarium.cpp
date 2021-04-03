@@ -1,10 +1,9 @@
 ﻿// Solarium.cpp : Defines the entry point for the application.
 //
 
-#include "../typedef.h"
-#include "../defines.h"
+#include "../Typedef.h"
+#include "../Defines.h"
 #include "Solarium.h"
-#include <stdint.h>
 #include <GLFW/glfw3.h>
 
 using namespace std;
