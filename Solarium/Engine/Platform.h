@@ -1,4 +1,4 @@
-#prgma once
+#pragma once
 
 struct GLFWwindow;
 
@@ -16,6 +16,7 @@ namespace Solarium
 		const bool StartGameLoop();
 
 	private:
+		Engine* _engine;
 		GLFWwindow* _window;
 	};
 }

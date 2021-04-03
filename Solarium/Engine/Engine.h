@@ -10,7 +10,7 @@ namespace Solarium
 	{
 	public:
 		Engine(const char* applicationName);
-
+		~Engine();
 		void Run();
 
 		void OnLoop(const uint32_t deltaTime);
