@@ -4,12 +4,13 @@
 #include "../Typedef.h"
 #include "../Defines.h"
 #include "Solarium.h"
-#include <GLFW/glfw3.h>
-#include "Logger.h"
+#include "Engine.h"
 using namespace std;
 
 int main( int argc, const char** argv )
 {
-	Solarium::Logger::Log("Lukas is dum and has %d chromies", 50);
+	Solarium::Engine* engine = new Solarium::Engine("Sol");
+	engine->Run();
+	delete engine;
 	return 0;
 }
