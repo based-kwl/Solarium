@@ -13,10 +13,10 @@
 #endif
 
 #ifdef PLATFORM_WINDOWS
-#define FORCEINLINE __forceinline;
-#define FORCENOINLINE _declspec(noinline);
+#define FORCEINLINE __forceinline
+#define FORCENOINLINE _declspec(noinline)
 #ifdef SOLARIUM_BUILD_LIB
-#define SOLARIUM_API __declspec(dllexport);
+#define SOLARIUM_API __declspec(dllexport)
 #else
 #define SOLARIUM_API __declspec(dllimport)
 #endif
@@ -34,9 +34,9 @@
 
 #if _MSC_VER
 #include <intrin.h>
-#define debugBreak() __debugBreak();
+#define debugBreak() __debugbreak()
 #else
-#define debugBreak() __asm { int 3 };
+#define debugBreak() __asm { int 3 }
 #endif
 
 #define ASSERT(expr) \
@@ -76,6 +76,11 @@
 #define ASSERT_DEBUG(expr)
 #endif
 
+FORCEINLINE void reportAssertionFailure(const char* expression, const char* message, const char* file, int line)
+{
+	std::cerr << "Assertion failure" << expression << ", message: '" << message << "', in file: " << file << ", line: " << line << "\n";
+}
+
 #else
 #define ASSERT(expr)
 #define ASSERT_MSG(expr, message)
@@ -83,7 +88,3 @@
 
 #endif
 
-FORCEINLINE void reportAssertionFailure(const char* expression, const char* message, const char* file, int line)
-{
-	std::cerr << "Assertion failure" << expression << ", message: '" << message << "', in file: " << file << ", line: " << line << "\n";
-}
