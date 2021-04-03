@@ -1,8 +1,11 @@
-#version 460
+#version 460 core
+
+// ##### SHADER SETUP #####
+out vec4 fragColor;
 
 // ##### HEADERS #####
-#include "common.h"
-#include "parameters.h"
+#include "common.glsl"
+#include "parameters.glsl"
 
 // ##### UNIFORMS #####
 uniform vec2 resolution;
@@ -97,5 +100,5 @@ void main(){
     color = pow(color/(color+1.0), vec3(1.0/gamma));
 
     // Output the Rendered Frame
-    gl_FragColor = vec4(color, 1.0);
+    fragColor = vec4(color, 1.0);
 }

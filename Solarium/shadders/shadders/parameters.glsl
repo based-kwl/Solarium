@@ -1,6 +1,3 @@
-// ##### FLAGS #####
-//#define pathtracing
-
 // ##### PARAMETERS #####
 // Image Gamma (sRGB uses 2.2)
 #define gamma 2.2

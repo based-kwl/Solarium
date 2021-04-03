@@ -1,0 +1,7 @@
+# IDE Stuff
+.vs/
+.vscode/
+builds/
+
+# Windows Stuff
+*.ini
