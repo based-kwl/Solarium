@@ -1,3 +1,0 @@
-C:/Users/Kewen/Desktop/dome/New folder/Solarium/Solarium/out/build/x64-Debug (default)/CMakeFiles/Solarium.dir
-C:/Users/Kewen/Desktop/dome/New folder/Solarium/Solarium/out/build/x64-Debug (default)/CMakeFiles/edit_cache.dir
-C:/Users/Kewen/Desktop/dome/New folder/Solarium/Solarium/out/build/x64-Debug (default)/CMakeFiles/rebuild_cache.dir
