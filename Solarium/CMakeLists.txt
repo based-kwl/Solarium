@@ -7,6 +7,6 @@ include_directories(include)
 link_directories(lib)
 
 # Add source to this project's executable.
-add_executable (Solarium "Engine/Solarium.cpp" "Engine/Solarium.h" "Engine/Logger.h" "Engine/Logger.cpp")
+add_executable (Solarium "Engine/Solarium.cpp" "Engine/Solarium.h" "Engine/Logger.h" "Engine/Logger.cpp" "Engine/Platform.h" "Engine/Engine.h" "Engine/Engine.cpp")
 
 # TODO: Add tests and install targets if needed.
