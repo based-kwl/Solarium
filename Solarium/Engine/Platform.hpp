@@ -14,7 +14,6 @@ namespace Solarium
 		GLFWwindow* GetWindow() { return _window; }
 		
 		const bool StartGameLoop();
-
 	private:
 		Engine* _engine;
 		GLFWwindow* _window;

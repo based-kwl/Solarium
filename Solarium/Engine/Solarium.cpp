@@ -1,7 +1,7 @@
 ﻿// Solarium.cpp : Defines the entry point for the application.
 //
 
-#include "../Typedef.hpp"
+#include "../Typedef.h"
 #include "../Defines.hpp"
 #include "Solarium.hpp"
 #include "Engine.hpp"

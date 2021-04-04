@@ -1,5 +1,5 @@
-#include "Logger.h"
-#include "../Defines.h"
+#include "Logger.hpp"
+#include "../Defines.hpp"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
