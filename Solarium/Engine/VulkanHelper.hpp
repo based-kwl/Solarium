@@ -1,15 +1,17 @@
+#include <iostream>
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
-
+#include "Logger.hpp"
 namespace Solarium
 {
+	
 
-	static class VulkanHelper
+	class VulkanHelper
 	{
 	public:
-        vk::Instance initializeInstance(GLFWwindow* window);
+        static void InitializeInstance(GLFWwindow* window);
 	private:
-        vk::Instance _instance;
+		vk::Instance _instance;
 	};
 
 
