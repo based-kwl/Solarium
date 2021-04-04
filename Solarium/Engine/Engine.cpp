@@ -1,6 +1,6 @@
-#include "Engine.h"
-#include "Platform.h"
-#include "Logger.h"
+#include "Engine.hpp"
+#include "Platform.hpp"
+#include "Logger.hpp"
 
 namespace Solarium
 {
