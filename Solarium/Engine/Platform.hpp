@@ -1,21 +1,32 @@
 #pragma once
 
+#define GFLW_INCLUDE_VULKAN
+#include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
+#include <stdexcept>
+#include "Logger.hpp"
+
+
 struct GLFWwindow;
 
 namespace Solarium
 {
+
 	class Engine;
+
 	class Platform
 	{
 	public:
-		Platform(Engine* engine, const char* applicationName);
+		Platform(const char* applicationName);
 		~Platform();
 
 		GLFWwindow* GetWindow() { return _window; }
 		
 		const bool StartGameLoop();
+
+		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
+
 	private:
-		Engine* _engine;
 		GLFWwindow* _window;
 	};
 }

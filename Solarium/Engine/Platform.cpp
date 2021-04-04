@@ -1,25 +1,17 @@
 
-
-#include <GLFW/glfw3.h>
-#include <vulkan/vulkan.hpp>
-
-#include "Engine.hpp"
 #include "Platform.hpp"
-#include "Logger.hpp"
-#include "VulkanHelper.hpp"
+
 namespace Solarium
 {
-	Platform::Platform(Engine* engine, const char* applicationName)
+	Platform::Platform(const char* applicationName)
 	{
-		Logger::Trace("Initializing platform");
-		_engine = engine;
-
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		_window = glfwCreateWindow(1280, 720, applicationName, nullptr, nullptr);
 		glfwSetWindowUserPointer(_window, this);
+		Logger::Log("Window Created.");
 	}
 	
 	Platform:: ~Platform()
@@ -35,10 +27,16 @@ namespace Solarium
 	{
 		while (!glfwWindowShouldClose(_window)) {
 			glfwPollEvents();
-
-			_engine->OnLoop(0);
 		}
 
 		return true;
+	}
+
+	void Platform::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
+	{
+		if (glfwCreateWindowSurface(instance, _window, nullptr, surface) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create window surface.");
+		}
 	}
 }

@@ -9,6 +9,7 @@ using namespace std;
 
 int main( int argc, const char** argv )
 {
+	Solarium::Logger::Log("eeeeeeeee");
 	Solarium::Engine* engine = new Solarium::Engine("Sol");
 	engine->Run();
 	delete engine;
