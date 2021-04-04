@@ -9,7 +9,8 @@ namespace Solarium
 	{
 		Solarium::Logger::Log("INITIALIZING");
 		_platform = new Platform(this, applicationName);
-		auto renderer = new VulkanRenderer(_platform);
+		vk::Instance instance;
+		auto renderer = new VulkanRenderer(_platform, instance);
 	}
 
 	Engine::~Engine()
