@@ -1,10 +1,10 @@
 ﻿// Solarium.cpp : Defines the entry point for the application.
 //
 
-#include "../Typedef.h"
-#include "../Defines.h"
-#include "Solarium.h"
-#include "Engine.h"
+#include "../Typedef.hpp"
+#include "../Defines.hpp"
+#include "Solarium.hpp"
+#include "Engine.hpp"
 using namespace std;
 
 int main( int argc, const char** argv )
