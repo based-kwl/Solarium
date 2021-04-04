@@ -1,14 +1,12 @@
 #include "Engine.hpp"
-#include "Platform.hpp"
-#include "VulkanRenderer.hpp"
-#include "Logger.hpp"
 
 namespace Solarium
 {
 	Engine::Engine(const char* applicationName)
 	{
 		Solarium::Logger::Log("INITIALIZING");
-		_platform = new Platform(this, applicationName);
+		_platform = new Platform(applicationName);
+		device = new Device{ *_platform };
 		vk::Instance instance;
 		auto renderer = new VulkanRenderer(_platform, instance);
 	}

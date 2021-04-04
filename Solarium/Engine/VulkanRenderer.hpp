@@ -1,8 +1,10 @@
 #pragma once
 
+#define GFLW_INCLUDE_VULKAN
 #include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
+
 #include "Platform.hpp"
-#include "GLFW/glfw3.h"
 
 namespace Solarium
 {
@@ -16,7 +18,6 @@ namespace Solarium
 
 	private:
 		Platform* _platform;
+
 	};
-
-
 }

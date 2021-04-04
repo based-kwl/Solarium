@@ -18,7 +18,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
 
-    std::cout << "validation layer: " << pCallbackData->pMessage << std::endl;
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+    {
+        (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) ? Solarium::Logger::Error("VALIDATION LAYER: ", pCallbackData->pMessage) : Solarium::Logger::Warn("VALIDATION LAYER: ", pCallbackData->pMessage);
+    }
 
     return VK_FALSE;
 }
@@ -46,10 +49,10 @@ namespace Solarium
         VULKAN_HPP_DEFAULT_DISPATCHER.init( instance );
         auto messenger = instance.createDebugUtilsMessengerEXT(
         vk::DebugUtilsMessengerCreateInfoEXT{ {},
-                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-                vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
-                vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eError   | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral     | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
             debugCallback },
         nullptr);
     }
