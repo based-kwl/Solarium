@@ -1,16 +1,18 @@
 #version 460 core
 
+// ##### UNIFORMS #####
+uniform vec2 resolution;
+uniform vec3 campos;
+uniform vec3 camdir;
+
 // ##### SHADER SETUP #####
+in vec3 campos;
+in vec3 raydirection;
 out vec4 fragColor;
 
 // ##### HEADERS #####
 #include "common.glsl"
 #include "parameters.glsl"
-
-// ##### UNIFORMS #####
-uniform vec2 resolution;
-uniform vec3 campos;
-uniform vec3 camdir;
 
 // ##### DISTANCE ESTIMATORS #####
 // Planet Distance Estimator
@@ -91,7 +93,7 @@ vec3 raytrace(){
 // Render and Output the Frame
 void main(){
     // Screen UV Coordinates
-    vec2 uv = 2.0*(gl_FragCoord.xy-0.5*resolution.xy)/max(resolution.x, resolution.y);
+    //vec2 uv = 2.0*(gl_FragCoord.xy-0.5*resolution.xy)/max(resolution.x, resolution.y);
 
     // Render the Frame
     vec3 color = raytrace();
