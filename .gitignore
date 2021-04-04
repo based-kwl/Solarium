@@ -1,4 +1,8 @@
-.vs/
+*.code-workspace
+Solarium/build/
+Solarium/.vscode/*
+Solarium/.history/
+Solarium/vs/
 Solarium/.vs/
 Solarium/out/
 Solarium/obj/

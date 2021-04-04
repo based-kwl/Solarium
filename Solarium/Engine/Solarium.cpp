@@ -2,9 +2,9 @@
 //
 
 #include "../Typedef.h"
-#include "../Defines.h"
-#include "Solarium.h"
-#include "Engine.h"
+#include "../Defines.hpp"
+#include "Solarium.hpp"
+#include "Engine.hpp"
 using namespace std;
 
 int main( int argc, const char** argv )

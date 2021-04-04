@@ -1,11 +1,11 @@
 #define GLFW_INCLUDE_VULKAN
 
 #include <GLFW/glfw3.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
-#include "Engine.h"
-#include "Platform.h"
-#include "Logger.h"
+#include "Engine.hpp"
+#include "Platform.hpp"
+#include "Logger.hpp"
 
 namespace Solarium
 {

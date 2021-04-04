@@ -1,6 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
+#include "Platform.hpp"
+#include "GLFW/glfw3.h"
 
 namespace Solarium
 {
@@ -11,6 +13,7 @@ namespace Solarium
 	public:
 		VulkanRenderer(Platform* platform);
 		~VulkanRenderer();
+
 	private:
 		Platform* _platform;
 	};
