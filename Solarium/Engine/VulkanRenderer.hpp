@@ -11,7 +11,7 @@ namespace Solarium
 	class VulkanRenderer
 	{
 	public:
-		VulkanRenderer(Platform* platform);
+		VulkanRenderer(Platform* platform, vk::Instance instance);
 		~VulkanRenderer();
 
 	private:

@@ -10,6 +10,7 @@ Solarium/lib.zip
 # Compiled Sources
 Solarium/obj/
 Solarium/out/
+Solarium/build/
 
 # Windows Stuff
 *.ini
