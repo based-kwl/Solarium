@@ -1,9 +1,15 @@
-*.code-workspace
-Solarium/build/
-Solarium/.vscode/*
-Solarium/.history/
-Solarium/vs/
+# IDE Folders and Files
+.vs/
+.vscode/
 Solarium/.vs/
-Solarium/out/
-Solarium/obj/
+
+# Libraries
 Solarium/lib/
+Solarium/lib.zip
+
+# Compiled Sources
+Solarium/obj/
+Solarium/out/
+
+# Windows Stuff
+*.ini
