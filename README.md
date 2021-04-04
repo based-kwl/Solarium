@@ -1,2 +1,3 @@
-# NotSE
+# Solarium
+
 Yes.
