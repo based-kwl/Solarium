@@ -7,8 +7,8 @@ uniform vec3 cameraPosition;
 layout (location = 0) in vec3 raydir;
 
 // ##### SHADER SETUP #####
-out vec3 campos;
-out vec3 raydirection;
+layout (location = 1) out vec4 campos;
+layout (location = 2) out vec4 raydirection;
 
 void main(){
     // Output to the Fragment Shader

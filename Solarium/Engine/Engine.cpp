@@ -9,7 +9,7 @@ namespace Solarium
 		device = new Device{ *_platform };
 		vk::Instance instance;
 		auto renderer = new VulkanRenderer(_platform, instance);
-		//pipeline = new Pipeline(*device, "../../shaders/out/Test_shader.vert.spv", "../../shaders/out/Test_shader.frag.spv", Pipeline::defaultPipelineConfigInfo(1280, 720));
+		//pipeline = new Pipeline(*device, "../../../shadders/out/main.vert.spv", "../../../shadders/out/main.frag.spv", Pipeline::defaultPipelineConfigInfo(800, 600));
 
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createPipelineLayout();
@@ -55,7 +55,7 @@ namespace Solarium
 		auto pipelineConfig = Pipeline::defaultPipelineConfigInfo(swapChain->width(), swapChain->height());
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		pipeline = std::make_unique<Pipeline>(*device, "../../../shaders/out/main.vert.spv", "../../../shaders/out/main.frag.spv", pipelineConfig);
+		pipeline = std::make_unique<Pipeline>(*device, "../../../shadders/out/main.vert.spv", "../../../shadders/out/main.frag.spv", pipelineConfig);
 	}
 
 	void Engine::createCommandBuffers()

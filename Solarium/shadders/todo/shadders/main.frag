@@ -8,7 +8,7 @@ uniform vec3 camdir;
 // ##### SHADER SETUP #####
 in vec3 campos;
 in vec3 raydirection;
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
 
 // ##### HEADERS #####
 #include "common.glsl"

@@ -8,10 +8,10 @@ Solarium/lib/
 Solarium/lib.zip
 
 # Compiled Sources
+Solarium/build/
 Solarium/obj/
 Solarium/out/
-Solarium/build/
-Solarium/Shaders/out/
+Solarium/shadders/out/
 
 # Windows Stuff
 *.ini

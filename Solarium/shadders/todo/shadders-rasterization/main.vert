@@ -1,9 +1,12 @@
 #version 460 core
 
 // ##### UNIFORMS #####
-uniform mat4 matVP;
-uniform mat4 matGeo;
-uniform vec3 cameraPosition;
+layout (binding = 1, std140) uniform vertexInputs
+{
+    mat4 matVP;
+    mat4 matGeo;
+    vec3 cameraPosition;
+};
 
 // ##### INPUT LAYOUT #####
 layout (location = 0) in vec3 position;
