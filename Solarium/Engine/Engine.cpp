@@ -38,13 +38,13 @@ namespace Solarium
 
 	void Engine::createPipelineLayout()
 	{
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 0;
 		pipelineLayoutInfo.pSetLayouts = nullptr;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
-		if (vkCreatePipelineLayout(device->device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+		pipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
+		if (!pipelineLayout)
 		{
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
@@ -62,51 +62,42 @@ namespace Solarium
 	{
 		commandBuffers.resize(swapChain->imageCount());
 
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		vk::CommandBufferAllocateInfo allocInfo{};
+		allocInfo.level = vk::CommandBufferLevel::ePrimary;
 		allocInfo.commandPool = device->getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-		if (vkAllocateCommandBuffers(device->device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+		commandBuffers = device->device().allocateCommandBuffers(allocInfo);
+		if (commandBuffers.empty())
 		{
 			throw std::runtime_error("Failed to allocate command buffers.");
 		}
 
 		for (int i = 0; i < commandBuffers.size(); i++)
 		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			vk::CommandBufferBeginInfo beginInfo{};
+			commandBuffers[i].begin(beginInfo);
 
-			if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to begin recording command buffer.");
-			}
-
-			VkRenderPassBeginInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			vk::RenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.renderPass = swapChain->getRenderPass();
 			renderPassInfo.framebuffer = swapChain->getFrameBuffer(i);
 
-			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.offset.x = 0;
+			renderPassInfo.renderArea.offset.y = 0;
+			
 			renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
 
-			std::array<VkClearValue, 2> clearValues{};
-			clearValues[0].color = { 0.1f, 0.1f, 0.1f, 0.1f };
-			clearValues[1].depthStencil = { 1.0f, 0 };
+			std::array<vk::ClearValue, 2> clearValues{};
+			clearValues[0].color.setFloat32({0.1,0.1,0.1,0.1});
+			clearValues[1].setDepthStencil({ 1.0f, 0 });
 			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			renderPassInfo.pClearValues = clearValues.data();
-
-			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
+			commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 			pipeline->bind(commandBuffers[i]);
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			commandBuffers[i].draw(3,1,0,0);
 
-			vkCmdEndRenderPass(commandBuffers[i]);
-			if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to record command buffer.");
-			}
+			commandBuffers[i].endRenderPass();
+			commandBuffers[i].end();
 		}
 	}
 	void Engine::drawFrame()
@@ -114,13 +105,13 @@ namespace Solarium
 		uint32_t imageIndex;
 		auto result = swapChain->acquireNextImage(&imageIndex);
 
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR)
 		{
 			throw std::runtime_error("Failed to acquire swap chain image.");
 		}
 
 		result = swapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
-		if (result != VK_SUCCESS)
+		if (result != vk::Result::eSuccess)
 		{
 			throw std::runtime_error("Failed to present swap chain image.");
 		}

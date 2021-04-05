@@ -38,6 +38,6 @@ namespace Solarium
 		SwapChain* swapChain;
 		std::unique_ptr<Pipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
-		std::vector<VkCommandBuffer> commandBuffers;
+		std::vector<vk::CommandBuffer> commandBuffers;
 	};
 }

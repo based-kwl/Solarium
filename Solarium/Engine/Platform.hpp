@@ -24,9 +24,9 @@ namespace Solarium
 		
 		const bool StartGameLoop();
 
-		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
+		void createWindowSurface(vk::Instance instance, vk::SurfaceKHR* surface);
 
-		VkExtent2D getExtent() { return { static_cast<uint32_t>(1280), static_cast<uint32_t>(720) }; }
+		vk::Extent2D getExtent() { return { static_cast<uint32_t>(1280), static_cast<uint32_t>(720) }; }
 
 	private:
 		GLFWwindow* _window;
