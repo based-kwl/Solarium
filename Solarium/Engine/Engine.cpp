@@ -9,7 +9,7 @@ namespace Solarium
 		device = new Device{ *_platform };
 		vk::Instance instance;
 		auto renderer = new VulkanRenderer(_platform, instance);
-		//pipeline = new Pipeline(*device, "../../shaders/out/Test_shader.vert.spv", "../../shaders/out/Test_shader.frag.spv", Pipeline::defaultPipelineConfigInfo(1280, 720));
+		//pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", Pipeline::defaultPipelineConfigInfo(1280, 720));
 
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createPipelineLayout();
@@ -55,7 +55,7 @@ namespace Solarium
 		auto pipelineConfig = Pipeline::defaultPipelineConfigInfo(swapChain->width(), swapChain->height());
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		pipeline = std::make_unique<Pipeline>(*device, "../../../shaders/out/main.vert.spv", "../../../shaders/out/main.frag.spv", pipelineConfig);
+		pipeline = std::make_unique<Pipeline>(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
 	}
 
 	void Engine::createCommandBuffers()
@@ -92,7 +92,7 @@ namespace Solarium
 			renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
 
 			std::array<VkClearValue, 2> clearValues{};
-			clearValues[0].color = { 0.0f, 0.0f, 0.0f, 0.0f };
+			clearValues[0].color = { 0.1f, 0.1f, 0.1f, 0.1f };
 			clearValues[1].depthStencil = { 1.0f, 0 };
 			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			renderPassInfo.pClearValues = clearValues.data();
