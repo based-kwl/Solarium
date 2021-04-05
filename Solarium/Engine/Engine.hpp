@@ -6,6 +6,10 @@
 #include "Logger.hpp"
 #include "Pipeline.hpp"
 #include "VulkanRenderer.hpp"
+#include "SwapChain.hpp"
+
+#include <stdexcept>
+#include <memory>
 
 namespace Solarium
 {
@@ -15,13 +19,25 @@ namespace Solarium
 	public:
 		Engine(const char* applicationName);
 		~Engine();
+
+		Engine(const Engine&) = delete;
+		Engine& operator=(const Engine&) = delete;
+
 		void Run();
 
 		void OnLoop(const uint32_t deltaTime);
 	private:
 
+		void createPipelineLayout();
+		void createPipeline();
+		void createCommandBuffers();
+		void drawFrame();
+
 		Platform* _platform;
 		Device* device;
-		Pipeline Pipeline{*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", Pipeline::defaultPipelineConfigInfo(1280, 720)};
+		SwapChain* swapChain;
+		std::unique_ptr<Pipeline> pipeline;
+		VkPipelineLayout pipelineLayout;
+		std::vector<VkCommandBuffer> commandBuffers;
 	};
 }

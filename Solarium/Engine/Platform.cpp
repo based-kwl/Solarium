@@ -25,10 +25,6 @@ namespace Solarium
 
 	const bool Platform::StartGameLoop()
 	{
-		while (!glfwWindowShouldClose(_window)) {
-			glfwPollEvents();
-		}
-
 		return true;
 	}
 
