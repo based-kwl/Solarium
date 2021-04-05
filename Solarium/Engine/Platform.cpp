@@ -9,7 +9,7 @@ namespace Solarium
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		_window = glfwCreateWindow(1280, 720, applicationName, nullptr, nullptr);
+		_window = glfwCreateWindow(800, 600, applicationName, nullptr, nullptr);
 		glfwSetWindowUserPointer(_window, this);
 		Logger::Log("Window Created.");
 	}
