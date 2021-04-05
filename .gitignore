@@ -11,6 +11,7 @@ Solarium/lib.zip
 Solarium/obj/
 Solarium/out/
 Solarium/build/
+Solarium/Shaders/out/
 
 # Windows Stuff
 *.ini
