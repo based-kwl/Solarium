@@ -184,6 +184,7 @@ namespace Solarium {
 		swapChainExtent = extent;
 	}
 
+	//Needs to be reworked for 3D
 	void SwapChain::createImageViews() {
 		swapChainImageViews.resize(swapChainImages.size());
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
