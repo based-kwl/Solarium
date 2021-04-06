@@ -34,7 +34,12 @@ namespace Solarium
 		while (!glfwWindowShouldClose(_platform->GetWindow()))
 		{
 			glfwPollEvents();
+			try {
 			drawFrame();
+			}
+			catch(vk::OutOfDateKHRError outOfDateKHRError)
+			{
+			}
 		}
 		device->device().waitIdle();
 	}
@@ -109,9 +114,9 @@ namespace Solarium
 		std::vector<vk::Fence> fences = swapChain->getInFlightFences();
 		size_t currentFrame = swapChain->getCurrentFrame();
 		//auto result = swapChain->acquireNextImage(&imageIndex);
-		vk::Result result = device->device().acquireNextImageKHR(swapChain->getSwapChain(), UINT64_MAX, (swapChain->getImageSemaphores())[currentFrame], nullptr, &imageIndex);
-
+		vk::Result result = device->device().acquireNextImageKHR(swapChain->getSwapChain(), UINT64_MAX, (swapChain->getImageSemaphores())[currentFrame], {}, &imageIndex);
 		if (result == vk::Result::eErrorOutOfDateKHR) {
+			Logger::Log("EEEE");
 			recreateSwapChain();
 			return;
 		}
@@ -157,6 +162,7 @@ namespace Solarium
 		result = device->presentQueue().presentKHR(presentInfo);
 
 		if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || framebufferResized) {
+			Logger::Log("EEEE");
 			framebufferResized = false;
 			recreateSwapChain();
 		}
