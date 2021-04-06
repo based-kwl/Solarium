@@ -26,7 +26,7 @@ namespace Solarium
 
 	Engine::~Engine()
 	{
-		vkDestroyPipelineLayout(device->device(), pipelineLayout, nullptr);
+		device->device().destroyPipelineLayout(pipelineLayout);
 	}
 
 	void Engine::Run()
@@ -36,8 +36,7 @@ namespace Solarium
 			glfwPollEvents();
 			drawFrame();
 		}
-
-		vkDeviceWaitIdle(device->device());
+		device->device().waitIdle();
 	}
 
 	void Engine::OnLoop(const uint32_t deltaTime)
@@ -47,13 +46,9 @@ namespace Solarium
 
 	void Engine::createPipelineLayout()
 	{
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0;
-		pipelineLayoutInfo.pSetLayouts = nullptr;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
-		if (vkCreatePipelineLayout(device->device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{ {}, 0, nullptr, 0 };
+		pipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo, nullptr);
+		if (!pipelineLayout)
 		{
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
@@ -71,81 +66,68 @@ namespace Solarium
 	{
 		commandBuffers.resize(swapChain->imageCount());
 
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = device->getCommandPool();
-		allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+		vk::CommandBufferAllocateInfo allocInfo{device->getCommandPool(), vk::CommandBufferLevel::ePrimary, static_cast<uint32_t>(commandBuffers.size())};
 
-		if (vkAllocateCommandBuffers(device->device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+		commandBuffers = device->device().allocateCommandBuffers(allocInfo);
+		if (commandBuffers.empty())
 		{
 			throw std::runtime_error("Failed to allocate command buffers.");
 		}
 
 		for (int i = 0; i < commandBuffers.size(); i++)
 		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			vk::CommandBufferBeginInfo beginInfo{};
+			commandBuffers[i].begin(beginInfo);
 
-			if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to begin recording command buffer.");
-			}
-
-			VkRenderPassBeginInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			vk::RenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.renderPass = swapChain->getRenderPass();
 			renderPassInfo.framebuffer = swapChain->getFrameBuffer(i);
 
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
+			renderPassInfo.renderArea = { { 0, 0 }, {swapChain->getSwapChainExtent()} };
 
-			std::array<VkClearValue, 2> clearValues{};
-			clearValues[0].color = { 0, 0, 0, 0 };
-			clearValues[1].depthStencil = { 1.0f, 0 };
+			std::array<vk::ClearValue, 2> clearValues{};
+			clearValues[0].color.setFloat32({ 0, 0, 0, 0 });
+			clearValues[1].depthStencil.depth = 1.0f;
+			clearValues[1].depthStencil.stencil = 0;
+
 			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			renderPassInfo.pClearValues = clearValues.data();
 
-			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
 			pipeline->bind(commandBuffers[i]);
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(commandBuffers[i]);
-			if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to record command buffer.");
-			}
+			commandBuffers[i].draw(3, 1, 0, 0);
+			commandBuffers[i].endRenderPass();
+			commandBuffers[i].end();
 		}
 	}
 
 	void Engine::drawFrame()
 	{
 		uint32_t imageIndex;
-		std::vector<VkFence> images = swapChain->getImagesInFlight();
-		std::vector<VkFence> fences = swapChain->getInFlightFences();
+		std::vector<vk::Fence> images = swapChain->getImagesInFlight();
+		std::vector<vk::Fence> fences = swapChain->getInFlightFences();
 		size_t currentFrame = swapChain->getCurrentFrame();
 		//auto result = swapChain->acquireNextImage(&imageIndex);
-		VkResult result = vkAcquireNextImageKHR(device->device(), swapChain->getSwapChain(), UINT64_MAX, (swapChain->getImageSemaphores())[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		vk::Result result = device->device().acquireNextImageKHR(swapChain->getSwapChain(), UINT64_MAX, (swapChain->getImageSemaphores())[currentFrame], nullptr, &imageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		if (result == vk::Result::eErrorOutOfDateKHR) {
 			recreateSwapChain();
 			return;
 		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
-		if (images[imageIndex] != VK_NULL_HANDLE) {
-			vkWaitForFences(device->device(), 1, &images[imageIndex], VK_TRUE, UINT64_MAX);
+		if (images[imageIndex]) {
+			device->device().waitForFences(images[imageIndex], VK_TRUE, UINT64_MAX);
 		}
 		swapChain->setImageInFlight(imageIndex, fences[currentFrame]);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		vk::SubmitInfo submitInfo{};
 
-		VkSemaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		vk::Semaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };
+		vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
@@ -153,35 +135,32 @@ namespace Solarium
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
 
-		VkSemaphore signalSemaphores[] = { (swapChain->getFinishedSemaphores())[currentFrame] };
+		vk::Semaphore signalSemaphores[] = { (swapChain->getFinishedSemaphores())[currentFrame] };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		vkResetFences(device->device(), 1, &fences[currentFrame]);
+		device->device().resetFences(fences[currentFrame]);
 
-		if (vkQueueSubmit(device->graphicsQueue(), 1, &submitInfo, fences[currentFrame]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to submit draw command buffer!");
-		}
+		device->graphicsQueue().submit(submitInfo, fences[currentFrame]);
 
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		vk::PresentInfoKHR presentInfo{};
 
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { swapChain->getSwapChain() };
+		vk::SwapchainKHR swapChains[] = { swapChain->getSwapChain() };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 
 		presentInfo.pImageIndices = &imageIndex;
 
-		result = vkQueuePresentKHR(device->presentQueue(), &presentInfo);
+		result = device->presentQueue().presentKHR(presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+		if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || framebufferResized) {
 			framebufferResized = false;
 			recreateSwapChain();
 		}
-		else if (result != VK_SUCCESS) {
+		else if (result != vk::Result::eSuccess) {
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 
@@ -199,7 +178,7 @@ namespace Solarium
 			glfwWaitEvents();
 		}
 
-		vkDeviceWaitIdle(device->device());
+		device->device().waitIdle();
 
 		cleanupSwapChain();
 
@@ -210,28 +189,29 @@ namespace Solarium
 		createCommandBuffers();
 		createCommandBuffers();
 
-		swapChain->getImagesInFlight().resize(swapChain->imageCount(), VK_NULL_HANDLE);
+		swapChain->getImagesInFlight().resize(swapChain->imageCount());
 	}
 
 	void Engine::cleanupSwapChain()
 	{
 		for (size_t i = 0; i < swapChain->getSwapChainFB().size(); i++)
 		{
-			vkDestroyFramebuffer(device->device(), swapChain->getSwapChainFB()[i], nullptr);
+			device->device().destroyFramebuffer(swapChain->getSwapChainFB()[i]);
 		}
 
-		vkFreeCommandBuffers(device->device(), device->getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+		device->device().freeCommandBuffers(device->getCommandPool(), commandBuffers);
 
-		vkDestroyPipeline(device->device(), pipeline->getGraphicsPipeline(), nullptr);
-		vkDestroyPipelineLayout(device->device(), pipelineLayout, nullptr);
-		vkDestroyRenderPass(device->device(), swapChain->getRenderPass(), nullptr);
+		device->device().destroyPipeline(pipeline->getGraphicsPipeline());
+		device->device().destroyPipelineLayout(pipelineLayout);
 
+		device->device().destroyRenderPass(swapChain->getRenderPass());
+		
 		for (size_t i = 0; i < swapChain->getSwapChainImageViews().size(); i++)
 		{
-			vkDestroyImageView(device->device(), swapChain->getImageView(i), nullptr);
+			device->device().destroyImageView(swapChain->getImageView(i));
 		}
 
-		vkDestroySwapchainKHR(device->device(), swapChain->getSwapChain(), nullptr);
+		device->device().destroySwapchainKHR(swapChain->getSwapChain());
 	}
 
 	void Engine::cleanup() {
@@ -239,17 +219,15 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->MAX_FRAMES_IN_FLIGHT; i++) 
 		{
-			vkDestroySemaphore(device->device(), swapChain->getFinishedSemaphores()[i], nullptr);
-			vkDestroySemaphore(device->device(), swapChain->getImageSemaphores()[i], nullptr);
-			vkDestroyFence(device->device(), swapChain->getInFlightFences()[i], nullptr);
+			device->device().destroySemaphore(swapChain->getFinishedSemaphores()[i]);
+			device->device().destroySemaphore(swapChain->getImageSemaphores()[i]);
+			device->device().destroyFence(swapChain->getInFlightFences()[i]);
 		}
 
-		vkDestroyCommandPool(device->device(), device->getCommandPool(), nullptr);
-
-		vkDestroyDevice(device->device() , nullptr);
-
-		vkDestroySurfaceKHR(device->getInstance(), device->surface(), nullptr);
-		vkDestroyInstance(device->getInstance(), nullptr);
+		device->device().destroyCommandPool(device->getCommandPool());
+		device->device().destroy();
+		device->getInstance().destroySurfaceKHR(device->surface());
+		device->getInstance().destroy();
 
 		glfwDestroyWindow(_platform->GetWindow());
 

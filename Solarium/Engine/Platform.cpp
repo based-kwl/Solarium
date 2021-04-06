@@ -29,11 +29,13 @@ namespace Solarium
 		return true;
 	}
 
-	void Platform::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
+	void Platform::createWindowSurface(vk::Instance instance, vk::SurfaceKHR* surface)
 	{
-		if (glfwCreateWindowSurface(instance, _window, nullptr, surface) != VK_SUCCESS)
+		VkSurfaceKHR tmpSurface;
+		if (glfwCreateWindowSurface(VkInstance(instance), _window, nullptr, &tmpSurface) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create window surface.");
 		}
+		*surface = vk::SurfaceKHR(tmpSurface);
 	}
 }
