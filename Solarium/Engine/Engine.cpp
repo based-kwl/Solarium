@@ -1,5 +1,5 @@
 #include "Engine.hpp"
-
+#include "Shaders.hpp"
 namespace Solarium
 {
 
@@ -14,9 +14,6 @@ namespace Solarium
 		_platform = new Platform(applicationName, width, height);
 		glfwSetFramebufferSizeCallback(_platform->GetWindow(), framebufferResizeCallback);
 		
-		//vk::Instance instance;
-		//auto renderer = new VulkanRenderer(_platform, instance);
-		//pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", Pipeline::defaultPipelineConfigInfo(1280, 720));
 		device = new Device{ *_platform };
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createPipelineLayout();
@@ -64,7 +61,7 @@ namespace Solarium
 		auto pipelineConfig = Pipeline::defaultPipelineConfigInfo(swapChain->width(), swapChain->height());
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
+		pipeline = new Pipeline(*device, "../../../Shaders/Test_shader.vert", "../../../Shaders/out/Test_shader.frag", pipelineConfig);
 	}
 
 	void Engine::createCommandBuffers()
@@ -212,7 +209,7 @@ namespace Solarium
 
 		device->device().destroyRenderPass(swapChain->getRenderPass());
 		
-		for (size_t i = 0; i < swapChain->getSwapChainImageViews().size(); i++)
+		for (int i = 0; i < swapChain->getSwapChainImageViews().size(); i++)
 		{
 			device->device().destroyImageView(swapChain->getImageView(i));
 		}
