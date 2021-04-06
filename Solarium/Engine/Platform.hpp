@@ -17,7 +17,7 @@ namespace Solarium
 	class Platform
 	{
 	public:
-		Platform(const char* applicationName);
+		Platform(const char* applicationName, uint32_t width, uint32_t height);
 		~Platform();
 
 		GLFWwindow* GetWindow() { return _window; }
@@ -26,9 +26,11 @@ namespace Solarium
 
 		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 
-		VkExtent2D getExtent() { return { static_cast<uint32_t>(1280), static_cast<uint32_t>(720) }; }
+		VkExtent2D getExtent() { return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) }; }
 
 	private:
 		GLFWwindow* _window;
+		uint32_t width;
+		uint32_t height;
 	};
 }

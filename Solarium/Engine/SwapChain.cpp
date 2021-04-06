@@ -30,32 +30,37 @@ namespace Solarium {
 		}
 		swapChainImageViews.clear();
 
-		if (swapChain != nullptr) {
+		if (swapChain != nullptr) 
+		{
 			vkDestroySwapchainKHR(device.device(), swapChain, nullptr);
 			swapChain = nullptr;
 		}
 
-		for (int i = 0; i < depthImages.size(); i++) {
+		for (int i = 0; i < depthImages.size(); i++) 
+		{
 			vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
 			vkDestroyImage(device.device(), depthImages[i], nullptr);
 			vkFreeMemory(device.device(), depthImageMemorys[i], nullptr);
 		}
 
-		for (auto framebuffer : swapChainFramebuffers) {
+		for (auto framebuffer : swapChainFramebuffers) 
+		{
 			vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
 		}
 
 		vkDestroyRenderPass(device.device(), renderPass, nullptr);
 
 		// cleanup synchronization objects
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+		{
 			vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
 			vkDestroyFence(device.device(), inFlightFences[i], nullptr);
 		}
 	}
 
-	VkResult SwapChain::acquireNextImage(uint32_t* imageIndex) {
+	VkResult SwapChain::acquireNextImage(uint32_t* imageIndex) 
+	{
 		vkWaitForFences(
 			device.device(),
 			1,
@@ -75,8 +80,10 @@ namespace Solarium {
 	}
 
 	VkResult SwapChain::submitCommandBuffers(
-		const VkCommandBuffer* buffers, uint32_t* imageIndex) {
-		if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
+		const VkCommandBuffer* buffers, uint32_t* imageIndex) 
+	{
+		if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) 
+		{
 			vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
 		}
 		imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
@@ -99,7 +106,8 @@ namespace Solarium {
 
 		vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
 		if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
-			VK_SUCCESS) {
+			VK_SUCCESS) 
+		{
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 
@@ -122,7 +130,8 @@ namespace Solarium {
 		return result;
 	}
 
-	void SwapChain::createSwapChain() {
+	void SwapChain::createSwapChain() 
+	{
 		SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
 
 		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -131,7 +140,8 @@ namespace Solarium {
 
 		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 		if (swapChainSupport.capabilities.maxImageCount > 0 &&
-			imageCount > swapChainSupport.capabilities.maxImageCount) {
+			imageCount > swapChainSupport.capabilities.maxImageCount) 
+		{
 			imageCount = swapChainSupport.capabilities.maxImageCount;
 		}
 
@@ -149,12 +159,14 @@ namespace Solarium {
 		QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
 
-		if (indices.graphicsFamily != indices.presentFamily) {
+		if (indices.graphicsFamily != indices.presentFamily) 
+		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
 		}
-		else {
+		else 
+		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0;      // Optional
 			createInfo.pQueueFamilyIndices = nullptr;  // Optional
@@ -168,7 +180,8 @@ namespace Solarium {
 
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+		if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) 
+		{
 			throw std::runtime_error("failed to create swap chain!");
 		}
 
@@ -185,7 +198,8 @@ namespace Solarium {
 	}
 
 	//Needs to be reworked for 3D
-	void SwapChain::createImageViews() {
+	void SwapChain::createImageViews() 
+	{
 		swapChainImageViews.resize(swapChainImages.size());
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			VkImageViewCreateInfo viewInfo{};
@@ -206,7 +220,8 @@ namespace Solarium {
 		}
 	}
 
-	void SwapChain::createRenderPass() {
+	void SwapChain::createRenderPass() 
+	{
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = findDepthFormat();
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -265,9 +280,11 @@ namespace Solarium {
 		}
 	}
 
-	void SwapChain::createFramebuffers() {
+	void SwapChain::createFramebuffers() 
+	{
 		swapChainFramebuffers.resize(imageCount());
-		for (size_t i = 0; i < imageCount(); i++) {
+		for (size_t i = 0; i < imageCount(); i++) 
+		{
 			std::array<VkImageView, 2> attachments = { swapChainImageViews[i], depthImageViews[i] };
 
 			VkExtent2D swapChainExtent = getSwapChainExtent();
@@ -290,7 +307,8 @@ namespace Solarium {
 		}
 	}
 
-	void SwapChain::createDepthResources() {
+	void SwapChain::createDepthResources() 
+	{
 		VkFormat depthFormat = findDepthFormat();
 		VkExtent2D swapChainExtent = getSwapChainExtent();
 
@@ -298,7 +316,8 @@ namespace Solarium {
 		depthImageMemorys.resize(imageCount());
 		depthImageViews.resize(imageCount());
 
-		for (int i = 0; i < depthImages.size(); i++) {
+		for (int i = 0; i < depthImages.size(); i++) 
+		{
 			VkImageCreateInfo imageInfo{};
 			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 			imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -338,7 +357,8 @@ namespace Solarium {
 		}
 	}
 
-	void SwapChain::createSyncObjects() {
+	void SwapChain::createSyncObjects() 
+	{
 		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -351,7 +371,8 @@ namespace Solarium {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+		{
 			if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
 				VK_SUCCESS ||
 				vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
@@ -363,10 +384,13 @@ namespace Solarium {
 	}
 
 	VkSurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(
-		const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-		for (const auto& availableFormat : availableFormats) {
+		const std::vector<VkSurfaceFormatKHR>& availableFormats) 
+	{
+		for (const auto& availableFormat : availableFormats) 
+		{
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
-				availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) 
+			{
 				return availableFormat;
 			}
 		}
@@ -375,9 +399,12 @@ namespace Solarium {
 	}
 
 	VkPresentModeKHR SwapChain::chooseSwapPresentMode(
-		const std::vector<VkPresentModeKHR>& availablePresentModes) {
-		for (const auto& availablePresentMode : availablePresentModes) {
-			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+		const std::vector<VkPresentModeKHR>& availablePresentModes) 
+	{
+		for (const auto& availablePresentMode : availablePresentModes) 
+		{
+			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) 
+			{
 				std::cout << "Present mode: Mailbox" << std::endl;
 				return availablePresentMode;
 			}
@@ -395,7 +422,8 @@ namespace Solarium {
 	}
 
 	VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
+		{
 			return capabilities.currentExtent;
 		}
 		else {
@@ -411,7 +439,8 @@ namespace Solarium {
 		}
 	}
 
-	VkFormat SwapChain::findDepthFormat() {
+	VkFormat SwapChain::findDepthFormat() 
+	{
 		return device.findSupportedFormat(
 			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 			VK_IMAGE_TILING_OPTIMAL,

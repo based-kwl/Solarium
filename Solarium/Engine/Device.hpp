@@ -45,6 +45,7 @@ namespace Solarium {
 		VkCommandPool getCommandPool() { return commandPool; }
 		VkDevice device() { return device_; }
 		VkSurfaceKHR surface() { return surface_; }
+		VkInstance getInstance() { return instance; }
 		VkQueue graphicsQueue() { return graphicsQueue_; }
 		VkQueue presentQueue() { return presentQueue_; }
 

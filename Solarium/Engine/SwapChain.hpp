@@ -40,14 +40,26 @@ namespace Solarium
 
 		VkResult acquireNextImage(uint32_t* imageIndex);
 		VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
-
-	private:
 		void createSwapChain();
 		void createImageViews();
 		void createDepthResources();
 		void createRenderPass();
 		void createFramebuffers();
 		void createSyncObjects();
+		
+		std::vector<VkFramebuffer> getSwapChainFB() { return swapChainFramebuffers; }
+		std::vector<VkImageView> getSwapChainImageViews() { return swapChainImageViews; }
+		std::vector<VkFence> getInFlightFences() { return inFlightFences; }
+		std::vector<VkFence> getImagesInFlight() { return imagesInFlight; }
+		VkSwapchainKHR getSwapChain() { return swapChain; }
+		std::vector<VkSemaphore> getImageSemaphores() { return imageAvailableSemaphores; }
+		std::vector<VkSemaphore> getFinishedSemaphores() { return renderFinishedSemaphores; }
+		size_t getCurrentFrame() { return currentFrame; }
+		
+		void setCurrentFrame(size_t newFrame) { currentFrame = newFrame; }
+		void setImageInFlight(int index, VkFence target) { imagesInFlight[index] = target; }
+
+	private:
 
 		// Helper functions
 		VkSurfaceFormatKHR chooseSwapSurfaceFormat(
