@@ -46,8 +46,8 @@ namespace Solarium
 		Device* device;
 		SwapChain* swapChain;
 		Pipeline* pipeline;
-		VkPipelineLayout pipelineLayout;
-		std::vector<VkCommandBuffer> commandBuffers;
+		vk::PipelineLayout pipelineLayout;
+		std::vector<vk::CommandBuffer> commandBuffers;
 
 		bool framebufferResized = false;
 	};
