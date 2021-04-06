@@ -48,6 +48,7 @@ namespace Solarium
 		Pipeline* pipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
+
 		bool framebufferResized = false;
 	};
 }

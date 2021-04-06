@@ -8,16 +8,16 @@ namespace Solarium
 {
 
 	struct PipelineConfigInfo {
-		vk::Viewport viewport;
-		vk::Rect2D scissor;
-		vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-		vk::PipelineRasterizationStateCreateInfo rasterizationInfo;
-		vk::PipelineMultisampleStateCreateInfo multisampleInfo;
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment;
-		vk::PipelineColorBlendStateCreateInfo colorBlendInfo;
-		vk::PipelineDepthStencilStateCreateInfo depthStencilInfo;
-	    vk::PipelineLayout pipelineLayout = nullptr;
-		vk::RenderPass renderPass = nullptr;
+		VkViewport viewport;
+		VkRect2D scissor;
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+		VkPipelineRasterizationStateCreateInfo rasterizationInfo;
+		VkPipelineMultisampleStateCreateInfo multisampleInfo;
+		VkPipelineColorBlendAttachmentState colorBlendAttachment;
+		VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+		VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+	    VkPipelineLayout pipelineLayout = nullptr;
+		VkRenderPass renderPass = nullptr;
 		uint32_t subpass = 0;
 	};
 
@@ -34,7 +34,7 @@ namespace Solarium
 		Pipeline(const Pipeline&) = delete;
 		void operator=(const Pipeline&) = delete;
 		
-		void bind(vk::CommandBuffer commandBuffer);
+		void bind(VkCommandBuffer commandBuffer);
 
 		static PipelineConfigInfo defaultPipelineConfigInfo(uint32_t width, uint32_t height);
 		void createGraphicsPipeline(
@@ -47,12 +47,12 @@ namespace Solarium
 	private:
 		static std::vector<char> readFile(const std::string& filepath);
 		
-		void createShaderModule(const std::vector<char>& code, vk::ShaderModule* shaderModule);
+		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
 		Device& ldevice;
-		vk::Pipeline graphicsPipeline;
-		vk::ShaderModule vertShaderModule;
-		vk::ShaderModule fragShaderModule;
+		VkPipeline graphicsPipeline;
+		VkShaderModule vertShaderModule;
+		VkShaderModule fragShaderModule;
 
 	};
 }
