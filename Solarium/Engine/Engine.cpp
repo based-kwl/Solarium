@@ -2,10 +2,10 @@
 
 namespace Solarium
 {
-	Engine::Engine(const char* applicationName)
+	Engine::Engine(const char* applicationName, uint32_t width, uint32_t height)
 	{
 		Solarium::Logger::Log("INITIALIZING");
-		_platform = new Platform(applicationName);
+		_platform = new Platform(applicationName, width, height);
 		device = new Device{ *_platform };
 		vk::Instance instance;
 		auto renderer = new VulkanRenderer(_platform, instance);
@@ -29,6 +29,8 @@ namespace Solarium
 			glfwPollEvents();
 			drawFrame();
 		}
+
+		vkDeviceWaitIdle(device->device());
 	}
 
 	void Engine::OnLoop(const uint32_t deltaTime)
@@ -92,7 +94,7 @@ namespace Solarium
 			renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
 
 			std::array<VkClearValue, 2> clearValues{};
-			clearValues[0].color = { 0.1f, 0.1f, 0.1f, 0.1f };
+			clearValues[0].color = { 0, 0, 0, 0 };
 			clearValues[1].depthStencil = { 1.0f, 0 };
 			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			renderPassInfo.pClearValues = clearValues.data();
@@ -109,6 +111,7 @@ namespace Solarium
 			}
 		}
 	}
+
 	void Engine::drawFrame()
 	{
 		uint32_t imageIndex;
@@ -116,13 +119,59 @@ namespace Solarium
 
 		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		{
-			throw std::runtime_error("Failed to acquire swap chain image.");
+			//throw std::runtime_error("Failed to acquire swap chain image.");
 		}
 
 		result = swapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
 		if (result != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to present swap chain image.");
+			//throw std::runtime_error("Failed to present swap chain image.");
 		}
+	}
+
+	void Engine::recreateSwapChain()
+	{
+
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(_platform->GetWindow(), &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(_platform->GetWindow(), &width, &height);
+			glfwWaitEvents();
+		}
+
+		cleanupSwapChain();
+
+		vkDeviceWaitIdle(device->device());
+
+		swapChain->createSwapChain();
+		swapChain->createImageViews();
+		swapChain->createRenderPass();
+
+		auto pipelineConfig = Pipeline::defaultPipelineConfigInfo(swapChain->width(), swapChain->height());
+		pipelineConfig.renderPass = swapChain->getRenderPass();
+		pipelineConfig.pipelineLayout = pipelineLayout;
+
+		pipeline->createGraphicsPipeline("../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
+		swapChain->createFramebuffers();
+		createCommandBuffers();
+	}
+
+	void Engine::cleanupSwapChain()
+	{
+		for (size_t i = 0; i < swapChain->getSwapChainFB().size(); i++) {
+			vkDestroyFramebuffer(device->device(), swapChain->getSwapChainFB()[i], nullptr);
+		}
+
+		vkFreeCommandBuffers(device->device(), device->getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+		vkDestroyPipeline(device->device(), pipeline->getGraphicsPipeline(), nullptr);
+		vkDestroyPipelineLayout(device->device(), pipelineLayout, nullptr);
+		vkDestroyRenderPass(device->device(), swapChain->getRenderPass(), nullptr);
+
+		for (size_t i = 0; i < swapChain->getSwapChainImageViews().size(); i++) {
+			vkDestroyImageView(device->device(), swapChain->getImageView(i), nullptr);
+		}
+
+		vkDestroySwapchainKHR(device->device(), swapChain->getSwapChain(), nullptr);
 	}
 }

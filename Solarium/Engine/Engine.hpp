@@ -17,7 +17,7 @@ namespace Solarium
 	class Engine
 	{
 	public:
-		Engine(const char* applicationName);
+		Engine(const char* applicationName, uint32_t width, uint32_t height);
 		~Engine();
 
 		Engine(const Engine&) = delete;
@@ -32,10 +32,13 @@ namespace Solarium
 		void createPipeline();
 		void createCommandBuffers();
 		void drawFrame();
+		void recreateSwapChain();
+		void cleanupSwapChain();
 
 		Platform* _platform;
 		Device* device;
 		SwapChain* swapChain;
+
 		std::unique_ptr<Pipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
