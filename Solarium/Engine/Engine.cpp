@@ -2,15 +2,22 @@
 
 namespace Solarium
 {
-	Engine::Engine(const char* applicationName)
+
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+		app->setFramebufferResized(true);
+	}
+	
+	Engine::Engine(const char* applicationName, uint32_t width, uint32_t height)
 	{
 		Solarium::Logger::Log("INITIALIZING");
-		_platform = new Platform(applicationName);
-		device = new Device{ *_platform };
-		vk::Instance instance;
-		auto renderer = new VulkanRenderer(_platform, instance);
+		_platform = new Platform(applicationName, width, height);
+		glfwSetFramebufferSizeCallback(_platform->GetWindow(), framebufferResizeCallback);
+		
+		//vk::Instance instance;
+		//auto renderer = new VulkanRenderer(_platform, instance);
 		//pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", Pipeline::defaultPipelineConfigInfo(1280, 720));
-
+		device = new Device{ *_platform };
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createPipelineLayout();
 		createPipeline();
@@ -29,6 +36,8 @@ namespace Solarium
 			glfwPollEvents();
 			drawFrame();
 		}
+
+		vkDeviceWaitIdle(device->device());
 	}
 
 	void Engine::OnLoop(const uint32_t deltaTime)
@@ -55,7 +64,7 @@ namespace Solarium
 		auto pipelineConfig = Pipeline::defaultPipelineConfigInfo(swapChain->width(), swapChain->height());
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		pipeline = std::make_unique<Pipeline>(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
+		pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
 	}
 
 	void Engine::createCommandBuffers()
@@ -87,9 +96,10 @@ namespace Solarium
 			
 			renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
 
-			std::array<vk::ClearValue, 2> clearValues{};
-			clearValues[0].color.setFloat32({0.1,0.1,0.1,0.1});
-			clearValues[1].setDepthStencil({ 1.0f, 0 });
+			std::array<VkClearValue, 2> clearValues{};
+			clearValues[0].color = { 0, 0, 0, 0 };
+			clearValues[1].depthStencil = { 1.0f, 0 };
+
 			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			renderPassInfo.pClearValues = clearValues.data();
 			commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
@@ -100,20 +110,145 @@ namespace Solarium
 			commandBuffers[i].end();
 		}
 	}
+
 	void Engine::drawFrame()
 	{
 		uint32_t imageIndex;
-		auto result = swapChain->acquireNextImage(&imageIndex);
+		std::vector<VkFence> images = swapChain->getImagesInFlight();
+		std::vector<VkFence> fences = swapChain->getInFlightFences();
+		size_t currentFrame = swapChain->getCurrentFrame();
+		//auto result = swapChain->acquireNextImage(&imageIndex);
+		VkResult result = vkAcquireNextImageKHR(device->device(), swapChain->getSwapChain(), UINT64_MAX, (swapChain->getImageSemaphores())[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-		if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			recreateSwapChain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			throw std::runtime_error("failed to acquire swap chain image!");
+		}
+
+		if (images[imageIndex] != VK_NULL_HANDLE) {
+			vkWaitForFences(device->device(), 1, &images[imageIndex], VK_TRUE, UINT64_MAX);
+		}
+		swapChain->setImageInFlight(imageIndex, fences[currentFrame]);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+
+		VkSemaphore signalSemaphores[] = { (swapChain->getFinishedSemaphores())[currentFrame] };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		vkResetFences(device->device(), 1, &fences[currentFrame]);
+
+		if (vkQueueSubmit(device->graphicsQueue(), 1, &submitInfo, fences[currentFrame]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to submit draw command buffer!");
+		}
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { swapChain->getSwapChain() };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+
+		presentInfo.pImageIndices = &imageIndex;
+
+		result = vkQueuePresentKHR(device->presentQueue(), &presentInfo);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+			framebufferResized = false;
+			recreateSwapChain();
+		}
+		else if (result != VK_SUCCESS) {
+			throw std::runtime_error("failed to present swap chain image!");
+		}
+
+		currentFrame = (currentFrame + 1) % swapChain->MAX_FRAMES_IN_FLIGHT;
+
+	}
+
+	void Engine::recreateSwapChain()
+	{
+		Solarium::Logger::Log("Resizing");
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(_platform->GetWindow(), &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(_platform->GetWindow(), &width, &height);
+			glfwWaitEvents();
+		}
+
+		vkDeviceWaitIdle(device->device());
+
+		cleanupSwapChain();
+
+		device = new Device{ *_platform };
+		swapChain = new SwapChain(*device, _platform->getExtent());
+		createPipelineLayout();
+		createPipeline();
+		createCommandBuffers();
+		createCommandBuffers();
+
+		swapChain->getImagesInFlight().resize(swapChain->imageCount(), VK_NULL_HANDLE);
+	}
+
+	void Engine::cleanupSwapChain()
+	{
+		for (size_t i = 0; i < swapChain->getSwapChainFB().size(); i++)
+
 		{
-			throw std::runtime_error("Failed to acquire swap chain image.");
+			vkDestroyFramebuffer(device->device(), swapChain->getSwapChainFB()[i], nullptr);
 		}
 
 		result = swapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
 		if (result != vk::Result::eSuccess)
+		vkFreeCommandBuffers(device->device(), device->getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+		vkDestroyPipeline(device->device(), pipeline->getGraphicsPipeline(), nullptr);
+		vkDestroyPipelineLayout(device->device(), pipelineLayout, nullptr);
+		vkDestroyRenderPass(device->device(), swapChain->getRenderPass(), nullptr);
+
+		for (size_t i = 0; i < swapChain->getSwapChainImageViews().size(); i++)
 		{
-			throw std::runtime_error("Failed to present swap chain image.");
+			vkDestroyImageView(device->device(), swapChain->getImageView(i), nullptr);
 		}
+
+		vkDestroySwapchainKHR(device->device(), swapChain->getSwapChain(), nullptr);
 	}
+
+	void Engine::cleanup() {
+		cleanupSwapChain();
+
+		for (size_t i = 0; i < swapChain->MAX_FRAMES_IN_FLIGHT; i++) 
+		{
+			vkDestroySemaphore(device->device(), swapChain->getFinishedSemaphores()[i], nullptr);
+			vkDestroySemaphore(device->device(), swapChain->getImageSemaphores()[i], nullptr);
+			vkDestroyFence(device->device(), swapChain->getInFlightFences()[i], nullptr);
+		}
+
+		vkDestroyCommandPool(device->device(), device->getCommandPool(), nullptr);
+
+		vkDestroyDevice(device->device() , nullptr);
+
+		vkDestroySurfaceKHR(device->getInstance(), device->surface(), nullptr);
+		vkDestroyInstance(device->getInstance(), nullptr);
+
+		glfwDestroyWindow(_platform->GetWindow());
+
+		glfwTerminate();
+	}
+
 }

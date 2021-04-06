@@ -50,12 +50,13 @@ namespace Solarium {
 		void operator=(const Device&) = delete;
 		Device(Device&&) = delete;
 		Device& operator=(Device&&) = delete;
-
-		vk::CommandPool getCommandPool() { return commandPool; }
-		vk::Device device() { return device_; }
-		vk::SurfaceKHR surface() { return surface_; }
-		vk::Queue graphicsQueue() { return graphicsQueue_; }
-		vk::Queue presentQueue() { return presentQueue_; }
+    
+		VkCommandPool getCommandPool() { return commandPool; }
+		VkDevice device() { return device_; }
+		VkSurfaceKHR surface() { return surface_; }
+		VkInstance getInstance() { return instance; }
+		VkQueue graphicsQueue() { return graphicsQueue_; }
+		VkQueue presentQueue() { return presentQueue_; }
 
 		SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
 		uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);

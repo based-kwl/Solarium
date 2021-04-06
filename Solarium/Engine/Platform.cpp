@@ -3,13 +3,14 @@
 
 namespace Solarium
 {
-	Platform::Platform(const char* applicationName)
+	Platform::Platform(const char* applicationName, uint32_t width, uint32_t height)
 	{
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-		_window = glfwCreateWindow(1280, 720, applicationName, nullptr, nullptr);
+		this->width = width;
+		this->height = height;
+		_window = glfwCreateWindow(width, height, applicationName, nullptr, nullptr);
 		glfwSetWindowUserPointer(_window, this);
 		Logger::Log("Window Created.");
 	}
