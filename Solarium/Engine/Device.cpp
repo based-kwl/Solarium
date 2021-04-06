@@ -193,9 +193,7 @@ namespace Solarium {
 	{
 		QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
 
-		vk::CommandPoolCreateInfo poolInfo = {};
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-		poolInfo.flags = vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+		vk::CommandPoolCreateInfo poolInfo = { vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer, queueFamilyIndices.graphicsFamily};
 
 		commandPool = device_.createCommandPool(poolInfo);
 		if (!commandPool) 
@@ -476,10 +474,7 @@ namespace Solarium {
 	{
 		vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
-		vk::BufferCopy copyRegion{};
-		copyRegion.srcOffset = 0;  // Optional
-		copyRegion.dstOffset = 0;  // Optional
-		copyRegion.size = size;
+		vk::BufferCopy copyRegion{0, 0, size};
 		commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
 		endSingleTimeCommands(commandBuffer);
 	}
