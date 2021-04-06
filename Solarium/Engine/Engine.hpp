@@ -13,6 +13,7 @@
 
 namespace Solarium
 {
+
 	class Platform;
 	class Engine
 	{
@@ -26,8 +27,10 @@ namespace Solarium
 		void Run();
 
 		void OnLoop(const uint32_t deltaTime);
-	private:
 
+		bool getFramebufferResized() { return framebufferResized; }
+		void setFramebufferResized(bool resized) { framebufferResized = resized; }
+	private:
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
@@ -35,12 +38,17 @@ namespace Solarium
 		void recreateSwapChain();
 		void cleanupSwapChain();
 
+		void cleanup();
+
+		//void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
 		Platform* _platform;
 		Device* device;
 		SwapChain* swapChain;
-
-		std::unique_ptr<Pipeline> pipeline;
+		Pipeline* pipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
+
+		bool framebufferResized = false;
 	};
 }
