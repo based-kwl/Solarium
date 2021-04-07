@@ -3,7 +3,6 @@
 #include "Device.hpp"
 #include <string>
 #include <vector>
-#include <shaderc/shaderc.hpp>
 
 namespace Solarium
 {

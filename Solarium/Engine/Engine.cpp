@@ -1,5 +1,4 @@
 #include "Engine.hpp"
-#include "Shaders.hpp"
 namespace Solarium
 {
 
@@ -61,7 +60,7 @@ namespace Solarium
 		auto pipelineConfig = Pipeline::defaultPipelineConfigInfo(swapChain->width(), swapChain->height());
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		pipeline = new Pipeline(*device, "../../../Shaders/Test_shader.vert", "../../../Shaders/out/Test_shader.frag", pipelineConfig);
+		pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
 	}
 
 	void Engine::createCommandBuffers()

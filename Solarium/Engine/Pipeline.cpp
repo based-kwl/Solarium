@@ -1,4 +1,5 @@
 #include "Pipeline.hpp"
+#include "ShaderHelper.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <iostream>
@@ -32,6 +33,7 @@ namespace Solarium
 		return buffer;
 	}
 
+
 	Pipeline::~Pipeline()
 	{
 		ldevice.device().destroyShaderModule(vertShaderModule);
@@ -43,13 +45,14 @@ namespace Solarium
 	{
 		//assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 		//assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
-		
+
 		auto vertCode = readFile(vertFilepath);
 		auto fragCode = readFile(fragFilepath);
-		ShaderHelper shaders = 
 
 		createShaderModule(vertCode, &vertShaderModule);
 		createShaderModule(fragCode, &fragShaderModule);
+		ShaderHelper* shaderHelper = new ShaderHelper("../../../Shaders", configInfo, ldevice.device());
+		//shaderHelper->getShaderPaths("../../../Shaders");
 
 		vk::PipelineShaderStageCreateInfo shaderStages[2];
 		shaderStages[0] = {{}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main"};
@@ -92,7 +95,15 @@ namespace Solarium
 
 	void Pipeline::createShaderModule(const std::vector<char>& code, vk::ShaderModule* shaderModule)
 	{
+		vk::ShaderModuleCreateInfo createInfo{};
+		createInfo.codeSize = code.size();
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
+		*shaderModule = ldevice.device().createShaderModule(createInfo);
+		if (!shaderModule)
+		{
+			throw std::runtime_error("Failed to create shader module.");
+		}
 	}
 
 	void Pipeline::bind(vk::CommandBuffer commandBuffer)
