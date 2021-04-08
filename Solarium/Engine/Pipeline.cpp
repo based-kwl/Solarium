@@ -46,30 +46,23 @@ namespace Solarium
 		//assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 		//assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 
-		auto vertCode = readFile(vertFilepath);
-		auto fragCode = readFile(fragFilepath);
-
-		createShaderModule(vertCode, &vertShaderModule);
-		createShaderModule(fragCode, &fragShaderModule);
 		ShaderHelper* shaderHelper = new ShaderHelper("../../../Shaders", configInfo, ldevice.device());
-		//shaderHelper->getShaderPaths("../../../Shaders");
+		std::vector<ShaderModules> modules = shaderHelper->getShaderModules();
 
-		vk::PipelineShaderStageCreateInfo shaderStages[2];
-		shaderStages[0] = {{}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main"};
-		
-		shaderStages[1] = {{}, vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main"};
+		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+		shaderStages.reserve(modules.size());
+		for (auto& module : modules)
+		{
+			shaderStages.push_back({{}, module.shaderType, module.module, "main"});
+		}
 
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
 
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{{},nullptr,nullptr};
 		vk::PipelineViewportStateCreateInfo viewportInfo{ {}, 1, &configInfo.viewport, 1, &configInfo.scissor};
 
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
 		pipelineInfo.pViewportState = &viewportInfo;
