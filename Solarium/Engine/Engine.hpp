@@ -5,7 +5,6 @@
 #include "Platform.hpp"
 #include "Logger.hpp"
 #include "Pipeline.hpp"
-#include "VulkanRenderer.hpp"
 #include "SwapChain.hpp"
 
 #include <stdexcept>
