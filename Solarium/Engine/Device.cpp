@@ -124,23 +124,23 @@ namespace Solarium {
 		{
 			if (isDeviceSuitable(device)) 
 			{
-				physicalDevice = device;
+				physicalDevice_ = device;
 				break;
 			}
 		}
 
-		if (!physicalDevice) 
+		if (!physicalDevice_) 
 		{
 			throw std::runtime_error("failed to find a suitable GPU!");
 		}
 
-		properties = physicalDevice.getProperties();
+		properties = physicalDevice_.getProperties();
 		std::cout << "physical device: " << properties.deviceName << std::endl;
 	}
 
 	void Device::createLogicalDevice() 
 	{
-		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice_);
 
 		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
@@ -179,7 +179,7 @@ namespace Solarium {
 			createInfo.enabledLayerCount = 0;
 		}
 
-		device_ = physicalDevice.createDevice(createInfo);
+		device_ = physicalDevice_.createDevice(createInfo);
 		if (!device_)
 		{
 			throw std::runtime_error("failed to create logical device!");
@@ -375,7 +375,7 @@ namespace Solarium {
 	{
 		for (vk::Format format : candidates) 
 		{
-			vk::FormatProperties props = physicalDevice.getFormatProperties(format);
+			vk::FormatProperties props = physicalDevice_.getFormatProperties(format);
 
 
 			if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) 
@@ -393,7 +393,7 @@ namespace Solarium {
 
 	uint32_t Device::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 	{
-		vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
+		vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice_.getMemoryProperties();
 		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) 
 		{
 			if ((typeFilter & (1 << i)) &&

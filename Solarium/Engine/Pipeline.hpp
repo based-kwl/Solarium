@@ -1,11 +1,39 @@
 #pragma once
 
 #include "Device.hpp"
+#include <glm/glm.hpp>
 #include <string>
 #include <vector>
 
 namespace Solarium
 {
+	struct Vertex {
+		glm::vec2 pos;
+		glm::vec3 color;
+		static vk::VertexInputBindingDescription getBindingDescription() {
+			vk::VertexInputBindingDescription bindingDescription{};
+			bindingDescription.binding = 0;
+			bindingDescription.stride = sizeof(Vertex);
+			bindingDescription.inputRate = vk::VertexInputRate::eVertex;
+			return bindingDescription;
+		}
+		static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
+		{
+			std::array<vk::VertexInputAttributeDescription, 2> attributeDescription{};
+
+			attributeDescription[0].binding = 0;
+			attributeDescription[0].location = 0;
+			attributeDescription[0].format = vk::Format::eR32G32Sfloat;
+			attributeDescription[0].offset = offsetof(Vertex, pos);
+
+			attributeDescription[1].binding = 0;
+			attributeDescription[1].location = 1;
+			attributeDescription[1].format = vk::Format::eR32G32B32Sfloat;
+			attributeDescription[1].offset = offsetof(Vertex, color);
+			 
+			return attributeDescription;
+		}
+	};
 
 	struct PipelineConfigInfo {
 		vk::Viewport viewport;
@@ -41,12 +69,10 @@ namespace Solarium
 			const std::string& vertFilepath,
 			const std::string& fragFilepath,
 			const PipelineConfigInfo& configInfo);
-
 		VkPipeline getGraphicsPipeline() { return graphicsPipeline; }
 
 	private:
 		static std::vector<char> readFile(const std::string& filepath);
-		
 		void createShaderModule(const std::vector<char>& code, vk::ShaderModule* shaderModule);
 
 		Device& ldevice;

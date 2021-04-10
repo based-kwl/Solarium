@@ -45,13 +45,14 @@ namespace Solarium {
 		vk::CommandPool getCommandPool() { return commandPool; }
 		vk::Device device() { return device_; }
 		vk::SurfaceKHR surface() { return surface_; }
+		vk::PhysicalDevice physicalDevice() { return physicalDevice_; }
 		vk::Instance getInstance() { return instance; }
 		vk::Queue graphicsQueue() { return graphicsQueue_; }
 		vk::Queue presentQueue() { return presentQueue_; }
 
-		SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
+		SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice_); }
 		uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
-		QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
+		QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice_); }
 		vk::Format findSupportedFormat(
 			const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
@@ -96,7 +97,7 @@ namespace Solarium {
 
 		vk::Instance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
-		vk::PhysicalDevice physicalDevice = nullptr;
+		vk::PhysicalDevice physicalDevice_ = nullptr;
 		Platform& window;
 		vk::CommandPool commandPool;
 
