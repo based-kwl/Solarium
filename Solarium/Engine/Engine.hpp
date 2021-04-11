@@ -30,6 +30,8 @@ namespace Solarium
 		bool getFramebufferResized() { return framebufferResized; }
 		void setFramebufferResized(bool resized) { framebufferResized = resized; }
 	private:
+		uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+		void createVertexBuffer();
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
@@ -47,6 +49,8 @@ namespace Solarium
 		Pipeline* pipeline;
 		vk::PipelineLayout pipelineLayout;
 		std::vector<vk::CommandBuffer> commandBuffers;
+		vk::DeviceMemory vertexBufferMemory;
+		vk::Buffer vertexBuffer;
 
 		bool framebufferResized = false;
 	};

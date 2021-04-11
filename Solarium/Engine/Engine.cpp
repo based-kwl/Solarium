@@ -1,7 +1,52 @@
 #include "Engine.hpp"
 namespace Solarium
 {
+	const std::vector<Vertex> vertices = { 
+		{{0.f, -0.5f}, {1.f, 0.f, 0.f}},
+		{{0.5f, 0.5f}, {0.f, 1.f, 0.f}},
+		{{-0.5f, 0.5f}, {0.f, 0.f, 1.f}}
+	};
+	uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+	{
+		vk::PhysicalDeviceMemoryProperties memProperties = device->physicalDevice().getMemoryProperties();
 
+		for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+		throw std::runtime_error("Failed to find suitable memory type");
+	}
+
+	void Engine::createVertexBuffer()
+	{
+		vk::BufferCreateInfo bufferInfo;
+		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+		bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		vertexBuffer = device->device().createBuffer(bufferInfo);
+		if(!vertexBuffer)
+		{
+			throw std::runtime_error("Failed to create vertex buffer");
+		}
+
+		vk::MemoryRequirements memRequirements = device->device().getBufferMemoryRequirements(vertexBuffer);
+		vk::MemoryAllocateInfo allocInfo{memRequirements.size, findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)};
+		vertexBufferMemory = device->device().allocateMemory(allocInfo);
+		if(!vertexBufferMemory)
+		{
+			throw std::runtime_error("Failed to allocate vertex buffer memory");
+		}
+
+		device->device().bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
+
+		void* data = device->device().mapMemory(vertexBufferMemory, 0, bufferInfo.size);
+		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+		device->device().unmapMemory(vertexBufferMemory);
+	}
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 		app->setFramebufferResized(true);
@@ -97,7 +142,10 @@ namespace Solarium
 			commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
 			pipeline->bind(commandBuffers[i]);
-			commandBuffers[i].draw(3, 1, 0, 0);
+			std::vector<vk::Buffer> vertexBuffers = {vertexBuffer};
+			std::vector<vk::DeviceSize> offsets = {0};
+			commandBuffers[i].bindVertexBuffers(0, vertexBuffers, offsets);
+			commandBuffers[i].draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 			commandBuffers[i].endRenderPass();
 			commandBuffers[i].end();
 		}

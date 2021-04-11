@@ -7,7 +7,6 @@
 
 namespace Solarium
 {
-
 	Pipeline::Pipeline(Device& device, const std::string& vertFilepath, const std::string& fragFilepath, const PipelineConfigInfo& configInfo) : ldevice{ device }
 	{
 		createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
@@ -46,9 +45,12 @@ namespace Solarium
 		//assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 		//assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 
+
+		auto bindingDescription = Vertex::getBindingDescription();
+		auto attributeDescription = Vertex::getAttributeDescriptions();
+		
 		ShaderHelper* shaderHelper = new ShaderHelper("../../../Shaders", configInfo, ldevice.device());
 		std::vector<ShaderModules> modules = shaderHelper->getShaderModules();
-
 		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
 		shaderStages.reserve(modules.size());
 		for (auto& module : modules)
@@ -57,7 +59,7 @@ namespace Solarium
 		}
 
 
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{{},nullptr,nullptr};
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{{},bindingDescription,attributeDescription};
 		vk::PipelineViewportStateCreateInfo viewportInfo{ {}, 1, &configInfo.viewport, 1, &configInfo.scissor};
 
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
