@@ -62,6 +62,7 @@ namespace Solarium
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createPipelineLayout();
 		createPipeline();
+		createVertexBuffer();
 		createCommandBuffers();
 	}
 
