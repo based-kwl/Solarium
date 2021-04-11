@@ -6,51 +6,6 @@ namespace Solarium
 		{{0.5f, 0.5f}, {0.f, 1.f, 0.f}},
 		{{-0.5f, 0.5f}, {0.f, 0.f, 1.f}}
 	};
-	uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
-	{
-		vk::PhysicalDeviceMemoryProperties memProperties = device->physicalDevice().getMemoryProperties();
-
-		for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-		{
-			if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-			{
-				return i;
-			}
-		}
-		throw std::runtime_error("Failed to find suitable memory type");
-	}
-
-	void Engine::createVertexBuffer()
-	{
-		vk::BufferCreateInfo bufferInfo;
-		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-		bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
-		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-		vertexBuffer = device->device().createBuffer(bufferInfo);
-		if(!vertexBuffer)
-		{
-			throw std::runtime_error("Failed to create vertex buffer");
-		}
-
-		vk::MemoryRequirements memRequirements = device->device().getBufferMemoryRequirements(vertexBuffer);
-		vk::MemoryAllocateInfo allocInfo{memRequirements.size, findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)};
-		vertexBufferMemory = device->device().allocateMemory(allocInfo);
-		if(!vertexBufferMemory)
-		{
-			throw std::runtime_error("Failed to allocate vertex buffer memory");
-		}
-
-		device->device().bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
-
-		void* data = device->device().mapMemory(vertexBufferMemory, 0, bufferInfo.size);
-		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-		device->device().unmapMemory(vertexBufferMemory);
-	}
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
-		app->setFramebufferResized(true);
-	}
 	
 	Engine::Engine(const char* applicationName, uint32_t width, uint32_t height)
 	{
@@ -283,6 +238,52 @@ namespace Solarium
 		glfwDestroyWindow(_platform->GetWindow());
 
 		glfwTerminate();
+	}
+
+	uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+	{
+		vk::PhysicalDeviceMemoryProperties memProperties = device->physicalDevice().getMemoryProperties();
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+		throw std::runtime_error("Failed to find suitable memory type");
+	}
+
+	void Engine::createVertexBuffer()
+	{
+		vk::BufferCreateInfo bufferInfo;
+		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+		bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		vertexBuffer = device->device().createBuffer(bufferInfo);
+		if (!vertexBuffer)
+		{
+			throw std::runtime_error("Failed to create vertex buffer");
+		}
+
+		vk::MemoryRequirements memRequirements = device->device().getBufferMemoryRequirements(vertexBuffer);
+		vk::MemoryAllocateInfo allocInfo{ memRequirements.size, findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent) };
+		vertexBufferMemory = device->device().allocateMemory(allocInfo);
+		if (!vertexBufferMemory)
+		{
+			throw std::runtime_error("Failed to allocate vertex buffer memory");
+		}
+
+		device->device().bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
+
+		void* data = device->device().mapMemory(vertexBufferMemory, 0, bufferInfo.size);
+		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+		device->device().unmapMemory(vertexBufferMemory);
+	}
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+		app->setFramebufferResized(true);
 	}
 
 }
