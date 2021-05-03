@@ -1,52 +1,17 @@
 #include "Engine.hpp"
 namespace Solarium
 {
-	const std::vector<Vertex> vertices = { 
-		{{0.f, -0.5f}, {1.f, 0.f, 0.f}},
-		{{0.5f, 0.5f}, {0.f, 1.f, 0.f}},
-		{{-0.5f, 0.5f}, {0.f, 0.f, 1.f}}
+	const std::vector<Vertex> vertices = {
+		{{-0.5f, -0.5f},  {1.0f, 0.0f, 0.0f}},
+		{ {0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}},
+		{  {0.5f, 0.5f},  {0.0f, 0.0f, 1.0f}},
+		{ {-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}}
 	};
-	uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
-	{
-		vk::PhysicalDeviceMemoryProperties memProperties = device->physicalDevice().getMemoryProperties();
 
-		for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-		{
-			if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-			{
-				return i;
-			}
-		}
-		throw std::runtime_error("Failed to find suitable memory type");
-	}
+	const std::vector<uint16_t> indices = {
+		0, 1, 2, 2, 3, 0
+	};
 
-	void Engine::createVertexBuffer()
-	{
-		vk::BufferCreateInfo bufferInfo;
-		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-		bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
-		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-		vertexBuffer = device->device().createBuffer(bufferInfo);
-		if(!vertexBuffer)
-		{
-			throw std::runtime_error("Failed to create vertex buffer");
-		}
-
-		vk::MemoryRequirements memRequirements = device->device().getBufferMemoryRequirements(vertexBuffer);
-		vk::MemoryAllocateInfo allocInfo{memRequirements.size, findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)};
-		vertexBufferMemory = device->device().allocateMemory(allocInfo);
-		if(!vertexBufferMemory)
-		{
-			throw std::runtime_error("Failed to allocate vertex buffer memory");
-		}
-
-		device->device().bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
-
-		void* data = device->device().mapMemory(vertexBufferMemory, 0, bufferInfo.size);
-		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-		device->device().unmapMemory(vertexBufferMemory);
-	}
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 		app->setFramebufferResized(true);
@@ -63,12 +28,18 @@ namespace Solarium
 		createPipelineLayout();
 		createPipeline();
 		createVertexBuffer();
+		createIndexBuffer();
 		createCommandBuffers();
 	}
 
 	Engine::~Engine()
 	{
-		device->device().destroyPipelineLayout(pipelineLayout);
+		cleanupSwapChain();
+
+		device->device().destroyBuffer(indexBuffer);
+		device->device().freeMemory(indexBufferMemory);
+		device->device().destroyBuffer(vertexBuffer);
+		device->device().freeMemory(vertexBufferMemory);
 	}
 
 	void Engine::Run()
@@ -77,9 +48,9 @@ namespace Solarium
 		{
 			glfwPollEvents();
 			try {
-			drawFrame();
+				drawFrame();
 			}
-			catch(vk::OutOfDateKHRError outOfDateKHRError)
+			catch (vk::OutOfDateKHRError outOfDateKHRError)
 			{
 			}
 		}
@@ -88,6 +59,77 @@ namespace Solarium
 
 	void Engine::OnLoop(const uint32_t deltaTime)
 	{
+
+	}
+
+	uint32_t Engine::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+	{
+		vk::PhysicalDeviceMemoryProperties memProperties = device->physicalDevice().getMemoryProperties();
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+		throw std::runtime_error("Failed to find suitable memory type");
+	}
+
+	void Engine::createBuffer(
+		vk::DeviceSize size,
+		vk::BufferUsageFlags usage,
+		vk::MemoryPropertyFlags properties,
+		vk::Buffer& buffer,
+		vk::DeviceMemory& bufferMemory)
+	{
+		vk::BufferCreateInfo bufferInfo{};
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		buffer = device->device().createBuffer(bufferInfo);
+
+		if (!buffer)
+		{
+			throw std::runtime_error("failed to create vertex buffer!");
+		}
+
+		vk::MemoryRequirements memRequirements = device->device().getBufferMemoryRequirements(buffer);
+
+		vk::MemoryAllocateInfo allocInfo{};
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+		bufferMemory = device->device().allocateMemory(allocInfo);
+
+		if (VK_NULL_HANDLE)
+		{
+			throw std::runtime_error("failed to allocate vertex buffer memory!");
+		}
+
+		device->device().bindBufferMemory(buffer, bufferMemory, 0);
+	}
+
+	void Engine::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
+	{
+		vk::CommandBufferAllocateInfo allocInfo{ device->getCommandPool(), vk::CommandBufferLevel::ePrimary, 1 };
+		vk::CommandBuffer commandBuffer;
+		commandBuffer = device->device().allocateCommandBuffers(allocInfo)[0];
+
+		vk::CommandBufferBeginInfo beginInfo{ vk::CommandBufferUsageFlagBits::eOneTimeSubmit };
+		commandBuffer.begin(beginInfo);
+		vk::BufferCopy copyRegion{ 0,0,size };
+		commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
+		commandBuffer.end();
+
+		vk::SubmitInfo submitInfo{};
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		device->graphicsQueue().submit(submitInfo);
+		device->graphicsQueue().waitIdle();
+		device->device().freeCommandBuffers(device->getCommandPool(), commandBuffer);
 
 	}
 
@@ -107,6 +149,43 @@ namespace Solarium
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
+	}
+
+	void Engine::createVertexBuffer()
+	{
+		vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+
+		void* data = device->device().mapMemory(stagingBufferMemory, 0, bufferSize, {});
+		memcpy(data, vertices.data(), (size_t)bufferSize);
+		device->device().unmapMemory(stagingBufferMemory);
+
+		createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, vertexBuffer, vertexBufferMemory);
+		copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+		device->device().destroyBuffer(stagingBuffer);
+		device->device().freeMemory(stagingBufferMemory);
+	}
+
+	void Engine::createIndexBuffer() {
+		vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+
+		void* data = device->device().mapMemory(stagingBufferMemory, 0, bufferSize);
+		memcpy(data, indices.data(), (size_t)bufferSize);
+		device->device().unmapMemory(stagingBufferMemory);
+
+		createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, indexBuffer, indexBufferMemory);
+
+		copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+		device->device().destroyBuffer(stagingBuffer);
+		device->device().freeMemory(stagingBufferMemory);
 	}
 
 	void Engine::createCommandBuffers()
@@ -146,7 +225,8 @@ namespace Solarium
 			std::vector<vk::Buffer> vertexBuffers = {vertexBuffer};
 			std::vector<vk::DeviceSize> offsets = {0};
 			commandBuffers[i].bindVertexBuffers(0, vertexBuffers, offsets);
-			commandBuffers[i].draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+			commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+			commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 			commandBuffers[i].endRenderPass();
 			commandBuffers[i].end();
 		}
@@ -237,7 +317,6 @@ namespace Solarium
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createPipelineLayout();
 		createPipeline();
-		createCommandBuffers();
 		createCommandBuffers();
 
 		swapChain->getImagesInFlight().resize(swapChain->imageCount());

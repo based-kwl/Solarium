@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include "Logger.hpp"
 
-
 struct GLFWwindow;
 
 namespace Solarium
