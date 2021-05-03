@@ -99,6 +99,11 @@ class CompilationResult {
            shaderc_result_get_length(compilation_result_) /
                sizeof(OutputElementType);
   }
+  
+  size_t length() const {
+    if (!compilation_result_) return 0;
+    return shaderc_result_get_length(compilation_result_);
+  }
 
   // Returns the same iterator as cbegin().
   const_iterator begin() const { return cbegin(); }

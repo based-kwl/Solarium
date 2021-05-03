@@ -1,4 +1,5 @@
 #include "Pipeline.hpp"
+#include "ShaderHelper.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <iostream>
@@ -6,7 +7,6 @@
 
 namespace Solarium
 {
-
 	Pipeline::Pipeline(Device& device, const std::string& vertFilepath, const std::string& fragFilepath, const PipelineConfigInfo& configInfo) : ldevice{ device }
 	{
 		createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
@@ -32,11 +32,12 @@ namespace Solarium
 		return buffer;
 	}
 
+
 	Pipeline::~Pipeline()
 	{
-		vkDestroyShaderModule(ldevice.device(), vertShaderModule, nullptr);
-		vkDestroyShaderModule(ldevice.device(), fragShaderModule, nullptr);
-		vkDestroyPipeline(ldevice.device(), graphicsPipeline, nullptr);
+		ldevice.device().destroyShaderModule(vertShaderModule);
+		ldevice.device().destroyShaderModule(fragShaderModule);
+		ldevice.device().destroyPipeline(graphicsPipeline);
 	}
 
 	void Pipeline::createGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath, const PipelineConfigInfo& configInfo)
@@ -44,28 +45,26 @@ namespace Solarium
 		//assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 		//assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline:: no pipelineLayout provided in configInfo");
 
-		auto vertCode = readFile(vertFilepath);
-		auto fragCode = readFile(fragFilepath);
 
-		createShaderModule(vertCode, &vertShaderModule);
-		createShaderModule(fragCode, &fragShaderModule);
-
-		vk::PipelineShaderStageCreateInfo shaderStages[2];
-		shaderStages[0] = {{}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main"};
+		auto bindingDescription = Vertex::getBindingDescription();
+		auto attributeDescription = Vertex::getAttributeDescriptions();
 		
-		shaderStages[1] = {{}, vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main"};
+		ShaderHelper* shaderHelper = new ShaderHelper("../../../Shaders", configInfo, ldevice.device());
+		std::vector<ShaderModules> modules = shaderHelper->getShaderModules();
+		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+		shaderStages.reserve(modules.size());
+		for (auto& module : modules)
+		{
+			shaderStages.push_back({{}, module.shaderType, module.module, "main"});
+		}
 
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
 
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{{},bindingDescription,attributeDescription};
 		vk::PipelineViewportStateCreateInfo viewportInfo{ {}, 1, &configInfo.viewport, 1, &configInfo.scissor};
 
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
 		pipelineInfo.pViewportState = &viewportInfo;
@@ -127,7 +126,7 @@ namespace Solarium
 		configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
 		configInfo.rasterizationInfo.polygonMode = vk::PolygonMode::eFill;
 		configInfo.rasterizationInfo.lineWidth = 1.0f;
-		configInfo.rasterizationInfo.cullMode = vk::CullModeFlagBits::eNone;
+		configInfo.rasterizationInfo.cullMode = vk::CullModeFlagBits::eBack;
 		configInfo.rasterizationInfo.frontFace = vk::FrontFace::eClockwise; 
 		configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
 		configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
