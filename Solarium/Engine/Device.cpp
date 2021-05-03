@@ -63,7 +63,6 @@ namespace Solarium {
 		createCommandPool();
 	}
 
-
 	Device::~Device()
 	{
 		vkDestroyCommandPool(device_, commandPool, nullptr);
