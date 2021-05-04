@@ -127,7 +127,7 @@ namespace Solarium
 		configInfo.rasterizationInfo.polygonMode = vk::PolygonMode::eFill;
 		configInfo.rasterizationInfo.lineWidth = 1.0f;
 		configInfo.rasterizationInfo.cullMode = vk::CullModeFlagBits::eBack;
-		configInfo.rasterizationInfo.frontFace = vk::FrontFace::eClockwise; 
+		configInfo.rasterizationInfo.frontFace = vk::FrontFace::eCounterClockwise; 
 		configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
 		configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
 		configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional
