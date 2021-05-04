@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+
 #include "../Typedef.h"
 #include "Device.hpp"
 #include "Platform.hpp"
@@ -10,7 +11,6 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <stdexcept>
 #include <memory>
 
@@ -42,10 +42,21 @@ namespace Solarium
 			vk::DeviceMemory& bufferMemory);
 		uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 		void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+		vk::CommandBuffer beginSingleTimeCommands();
+		void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+		void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+
+		void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
 		void createPipelineLayout();
 		void createDescriptorSetLayout();
 		void createPipeline();
+		vk::ImageView createImageView(vk::Image image, vk::Format format);
+		void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory);
+		void createTextureImage();
+		void createImageViews();
+		void createTextureImageView();
+		void createTextureSampler();
 		void createVertexBuffer();
 		void createIndexBuffer();
 		void createUniformBuffers();
@@ -69,11 +80,16 @@ namespace Solarium
 		vk::PipelineLayout pipelineLayout;
 		std::vector<vk::CommandBuffer> commandBuffers;
 		vk::DeviceMemory vertexBufferMemory;
+		std::vector<vk::ImageView> swapChainImageViews;
 		vk::Buffer vertexBuffer;
 		vk::Buffer indexBuffer;
+		vk::Sampler textureSampler;
 		vk::DeviceMemory indexBufferMemory;
+		vk::ImageView textureImageView;
 		std::vector<vk::Buffer> uniformBuffers;
 		std::vector<vk::DeviceMemory> uniformBuffersMemory;
+		vk::Image textureImage;
+		vk::DeviceMemory textureImageMemory;
 		bool framebufferResized = false;
 		struct UniformBufferObject {
 			alignas(16) glm::mat4 model;
