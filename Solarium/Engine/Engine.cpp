@@ -1,14 +1,23 @@
 #include "Engine.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 namespace Solarium
 {
 	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f},  {1.0f, 0.0f, 0.0f}},
-		{ {0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}},
-		{  {0.5f, 0.5f},  {0.0f, 0.0f, 1.0f}},
-		{ {-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}}
+		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 	};
+
 	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4
 	};
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -25,8 +34,12 @@ namespace Solarium
 		device = new Device{ *_platform };
 		swapChain = new SwapChain(*device, _platform->getExtent());
 		createDescriptorSetLayout();
+		createImageViews();
 		createPipelineLayout();
 		createPipeline();
+		createTextureImage();
+		createTextureImageView();
+		createTextureSampler();
 		createVertexBuffer();
 		createIndexBuffer();
 		createUniformBuffers();
@@ -39,6 +52,10 @@ namespace Solarium
 	{
 		cleanupSwapChain();
 
+		device->device().destroySampler(textureSampler);
+		device->device().destroyImageView(textureImageView);
+		device->device().destroyImage(textureImage);
+		device->device().freeMemory(textureImageMemory);
 		device->device().destroyDescriptorSetLayout(descriptorSetLayout);
 		device->device().destroyBuffer(indexBuffer);
 		device->device().freeMemory(indexBufferMemory);
@@ -117,24 +134,66 @@ namespace Solarium
 
 	void Engine::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
 	{
-		vk::CommandBufferAllocateInfo allocInfo{ device->getCommandPool(), vk::CommandBufferLevel::ePrimary, 1 };
-		vk::CommandBuffer commandBuffer;
-		commandBuffer = device->device().allocateCommandBuffers(allocInfo)[0];
+		vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
+		commandBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy{ {}, {}, size });
+		endSingleTimeCommands(commandBuffer);
+	}
 
+
+	vk::CommandBuffer Engine::beginSingleTimeCommands()
+	{
+		vk::CommandBufferAllocateInfo allocInfo{ device->getCommandPool(), vk::CommandBufferLevel::ePrimary, 1 };
+		vk::CommandBuffer commandBuffer = device->device().allocateCommandBuffers(allocInfo)[0];
 		vk::CommandBufferBeginInfo beginInfo{ vk::CommandBufferUsageFlagBits::eOneTimeSubmit };
 		commandBuffer.begin(beginInfo);
-		vk::BufferCopy copyRegion{ 0,0,size };
-		commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
+		return commandBuffer;
+	}
+
+
+	void Engine::endSingleTimeCommands(vk::CommandBuffer commandBuffer)
+	{
 		commandBuffer.end();
-
-		vk::SubmitInfo submitInfo{};
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		device->graphicsQueue().submit(submitInfo);
+		device->graphicsQueue().submit(vk::SubmitInfo{ {}, {}, commandBuffer });
 		device->graphicsQueue().waitIdle();
 		device->device().freeCommandBuffers(device->getCommandPool(), commandBuffer);
+	}
 
+
+	void Engine::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height)
+	{
+		vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
+		vk::BufferImageCopy region{ 0, 0, 0, vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1}, {0, 0, 0}, { width, height, 1 } };
+		commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
+		endSingleTimeCommands(commandBuffer);
+	}
+
+	void Engine::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+	{
+		vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
+		vk::ImageMemoryBarrier barrier{ {}, {}, oldLayout, newLayout, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, image, vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } };
+		
+		vk::PipelineStageFlags sourceStage;
+		vk::PipelineStageFlags destinationStage;
+		if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal)
+		{
+			barrier.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+			barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			destinationStage = vk::PipelineStageFlagBits::eTransfer;
+		} else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+		{
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			sourceStage = vk::PipelineStageFlagBits::eTransfer;
+			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+		}
+		else
+		{
+			throw std::runtime_error("Invalid layout transition");
+		}
+		
+		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, {}, barrier);
+		endSingleTimeCommands(commandBuffer);
 	}
 
 	void Engine::createPipelineLayout()
@@ -153,7 +212,9 @@ namespace Solarium
 	void Engine::createDescriptorSetLayout()
 	{
 		vk::DescriptorSetLayoutBinding uboLayoutBinding{ 0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex };
-		vk::DescriptorSetLayoutCreateInfo layoutInfo{ {}, uboLayoutBinding };
+		vk::DescriptorSetLayoutBinding samplerLayoutBinding{ 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment };
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{ {}, bindings };
 
 		descriptorSetLayout = device->device().createDescriptorSetLayout(layoutInfo);
 	}
@@ -164,6 +225,88 @@ namespace Solarium
 		pipelineConfig.renderPass = swapChain->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
+	}
+
+
+	vk::ImageView Engine::createImageView(vk::Image image, vk::Format format)
+	{
+		vk::ImageViewCreateInfo viewInfo{ {}, image, vk::ImageViewType::e2D, format, {}, {vk::ImageAspectFlagBits::eColor, 0, 1, 0 ,1} };
+		vk::ImageView imageView = device->device().createImageView(viewInfo);
+		if (!imageView)
+		{
+			throw std::runtime_error("Failed to create texture image view");
+		}
+		return imageView;
+	}
+
+	void Engine::createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
+	{
+		vk::ImageCreateInfo imageInfo{ {}, vk::ImageType::e2D, format, vk::Extent3D{static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1}, 1, 1, vk::SampleCountFlagBits::e1, tiling, usage, vk::SharingMode::eExclusive };
+
+		textureImage = device->device().createImage(imageInfo);
+
+		vk::MemoryRequirements memRequirements = device->device().getImageMemoryRequirements(image);
+		vk::MemoryAllocateInfo allocInfo{ memRequirements.size, findMemoryType(memRequirements.memoryTypeBits, properties) };
+
+		textureImageMemory = device->device().allocateMemory(allocInfo);
+		if (!textureImageMemory)
+		{
+			throw std::runtime_error("Failed to allocate image memory");
+		}
+		device->device().bindImageMemory(image, imageMemory, 0);
+	}
+
+	void Engine::createTextureImage()
+	{
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load("textures/textures.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingBufferMemory;
+		vk::DeviceSize imageSize = texWidth * texHeight * 4;
+
+		if (!pixels)
+		{
+			throw std::runtime_error("Failed to load texture image");
+		}
+
+		createBuffer(imageSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+
+		void* data = device->device().mapMemory(stagingBufferMemory, 0, imageSize);
+		memcpy(data, pixels, static_cast<uint32_t>(imageSize));
+		device->device().unmapMemory(stagingBufferMemory);
+		stbi_image_free(pixels);
+
+		createImage(texWidth, texHeight, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, textureImage, textureImageMemory);
+		transitionImageLayout(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+		transitionImageLayout(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+		
+		device->device().destroyBuffer(stagingBuffer);
+		device->device().freeMemory(stagingBufferMemory);
+	}
+
+	void Engine::createImageViews()
+	{
+		swapChainImageViews.resize(swapChain->imageCount());
+		for (uint32_t i = 0; i < swapChain->imageCount(); i++)
+		{
+			swapChainImageViews[i] = createImageView(swapChain->getSwapChainImages()[i], swapChain->getSwapChainImageFormat());
+		}
+	}
+
+	void Engine::createTextureImageView()
+	{
+		textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb);
+	}
+
+	void Engine::createTextureSampler()
+	{
+		vk::SamplerCreateInfo samplerInfo{ {},  vk::Filter::eLinear, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat , vk::SamplerAddressMode::eRepeat, 0.f, VK_TRUE, device->properties.limits.maxSamplerAnisotropy, VK_FALSE, vk::CompareOp::eAlways, 0.f, 0.f, vk::BorderColor::eIntOpaqueBlack, VK_FALSE};
+		textureSampler = device->device().createSampler(samplerInfo);
+		if (!textureSampler)
+		{
+			throw std::runtime_error("Failed to create texture sampler");
+		}
 	}
 
 	void Engine::createVertexBuffer()
@@ -239,8 +382,8 @@ namespace Solarium
 
 	void Engine::createDescriptorPool()
 	{
-		vk::DescriptorPoolSize poolSize{ vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount()) };
-		vk::DescriptorPoolCreateInfo poolInfo{ {}, static_cast<uint32_t>(swapChain->imageCount()), poolSize };
+		std::array<vk::DescriptorPoolSize, 2> poolSizes{ vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount())}, vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(swapChain->imageCount())} };
+		vk::DescriptorPoolCreateInfo poolInfo{ {}, static_cast<uint32_t>(swapChain->imageCount()), poolSizes };
 
 		descriptorPool = device->device().createDescriptorPool(poolInfo);
 		if (!descriptorPool)
@@ -265,8 +408,9 @@ namespace Solarium
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
 			vk::DescriptorBufferInfo bufferInfo{ uniformBuffers[i], 0, sizeof(UniformBufferObject) };
-			vk::WriteDescriptorSet descriptorWrite{ descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo };
-			device->device().updateDescriptorSets(descriptorWrite, 0);
+			vk::DescriptorImageInfo imageInfo{ textureSampler, textureImageView, vk::ImageLayout::eShaderReadOnlyOptimal };
+			std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
+			device->device().updateDescriptorSets(descriptorWrites, 0);
 		}
 	}
 

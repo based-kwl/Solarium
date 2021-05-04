@@ -25,9 +25,10 @@ namespace Solarium
 
 		vk::Framebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
 		vk::RenderPass getRenderPass() { return renderPass; }
+		vk::Format getSwapChainImageFormat() { return swapChainImageFormat; }
+		std::vector<vk::Image> getSwapChainImages() { return swapChainImages; }
 		vk::ImageView getImageView(int index) { return swapChainImageViews[index]; }
 		size_t imageCount() { return swapChainImages.size(); }
-		vk::Format getSwapChainImageFormat() { return swapChainImageFormat; }
 		vk::Extent2D getSwapChainExtent() { return swapChainExtent; }
 		uint32_t width() { return swapChainExtent.width; }
 		uint32_t height() { return swapChainExtent.height; }

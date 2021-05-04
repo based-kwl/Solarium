@@ -32,7 +32,6 @@ namespace Solarium
 		return buffer;
 	}
 
-
 	Pipeline::~Pipeline()
 	{
 		ldevice.device().destroyShaderModule(vertShaderModule);
@@ -64,6 +63,7 @@ namespace Solarium
 
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		std::cout << shaderStages.size();
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
