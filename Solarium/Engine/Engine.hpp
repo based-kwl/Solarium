@@ -8,6 +8,8 @@
 #include "Logger.hpp"
 #include "Pipeline.hpp"
 #include "SwapChain.hpp"
+#include "UBO.hpp"
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -59,10 +61,6 @@ namespace Solarium
 		void createTextureSampler();
 		void createVertexBuffer();
 		void createIndexBuffer();
-		void createUniformBuffers();
-		void updateUniformbuffer(uint32_t currentImage);
-		void createDescriptorPool();
-		void createDescriptorSets();
 		void createCommandBuffers();
 		void drawFrame();
 		void recreateSwapChain();
@@ -74,9 +72,7 @@ namespace Solarium
 		Device* device;
 		SwapChain* swapChain;
 		Pipeline* pipeline;
-		vk::DescriptorPool descriptorPool;
-		std::vector<vk::DescriptorSet> descriptorSets;
-		vk::DescriptorSetLayout descriptorSetLayout;
+		UBO* uniformBufferObject;
 		vk::PipelineLayout pipelineLayout;
 		std::vector<vk::CommandBuffer> commandBuffers;
 		vk::DeviceMemory vertexBufferMemory;
@@ -86,15 +82,8 @@ namespace Solarium
 		vk::Sampler textureSampler;
 		vk::DeviceMemory indexBufferMemory;
 		vk::ImageView textureImageView;
-		std::vector<vk::Buffer> uniformBuffers;
-		std::vector<vk::DeviceMemory> uniformBuffersMemory;
 		vk::Image textureImage;
 		vk::DeviceMemory textureImageMemory;
 		bool framebufferResized = false;
-		struct UniformBufferObject {
-			alignas(16) glm::mat4 model;
-			alignas(16) glm::mat4 view;
-			alignas(16) glm::mat4 proj;
-		};
 	};
 }

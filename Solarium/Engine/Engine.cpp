@@ -42,9 +42,7 @@ namespace Solarium
 		createTextureSampler();
 		createVertexBuffer();
 		createIndexBuffer();
-		createUniformBuffers();
-		createDescriptorPool();
-		createDescriptorSets();
+		uniformBufferObject = new UBO(swapChain, device, textureSampler, textureImageView);
 		createCommandBuffers();
 	}
 
@@ -56,7 +54,7 @@ namespace Solarium
 		device->device().destroyImageView(textureImageView);
 		device->device().destroyImage(textureImage);
 		device->device().freeMemory(textureImageMemory);
-		device->device().destroyDescriptorSetLayout(descriptorSetLayout);
+		device->device().destroyDescriptorSetLayout(uniformBufferObject->getDescriptorSetLayout());
 		device->device().destroyBuffer(indexBuffer);
 		device->device().freeMemory(indexBufferMemory);
 		device->device().destroyBuffer(vertexBuffer);
@@ -199,6 +197,7 @@ namespace Solarium
 	void Engine::createPipelineLayout()
 	{
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		vk::DescriptorSetLayout descriptorSetLayout = uniformBufferObject->getDescriptorSetLayout();
 		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo, nullptr);
@@ -216,7 +215,7 @@ namespace Solarium
 		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{ {}, bindings };
 
-		descriptorSetLayout = device->device().createDescriptorSetLayout(layoutInfo);
+		uniformBufferObject->getDescriptorSetLayout() = device->device().createDescriptorSetLayout(layoutInfo);
 	}
 
 	void Engine::createPipeline()
@@ -346,74 +345,6 @@ namespace Solarium
 		device->device().freeMemory(stagingBufferMemory);
 	}
 
-
-	void Engine::createUniformBuffers()
-	{
-		vk::DeviceSize deviceSize = sizeof(UniformBufferObject);
-
-		uniformBuffers.resize(swapChain->imageCount());
-		uniformBuffersMemory.resize(swapChain->imageCount());
-
-		for (size_t i = 0; i < swapChain->imageCount(); i++)
-		{
-			createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[i], uniformBuffersMemory[i]);
-		}
-	}
-
-
-	void Engine::updateUniformbuffer(uint32_t currentImage)
-	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
-
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
-		ubo.proj[1][1] *= -1;
-
-		void* data = device->device().mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
-		memcpy(data, &ubo, sizeof(ubo));
-		device->device().unmapMemory(uniformBuffersMemory[currentImage]);
-	}
-
-
-	void Engine::createDescriptorPool()
-	{
-		std::array<vk::DescriptorPoolSize, 2> poolSizes{ vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount())}, vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(swapChain->imageCount())} };
-		vk::DescriptorPoolCreateInfo poolInfo{ {}, static_cast<uint32_t>(swapChain->imageCount()), poolSizes };
-
-		descriptorPool = device->device().createDescriptorPool(poolInfo);
-		if (!descriptorPool)
-		{
-			throw std::runtime_error("Failed to create descriptor pool");
-		}
-	}
-
-
-	void Engine::createDescriptorSets()
-	{
-		std::vector<vk::DescriptorSetLayout> layouts(swapChain->imageCount(), descriptorSetLayout);
-		vk::DescriptorSetAllocateInfo allocInfo{ descriptorPool, layouts };
-
-		descriptorSets.resize(swapChain->imageCount());
-		descriptorSets = device->device().allocateDescriptorSets(allocInfo);
-		if (descriptorSets[0] == VK_NULL_HANDLE)
-		{
-			throw std::runtime_error("Failed to allocate descriptor sets");
-		}
-
-		for (size_t i = 0; i < swapChain->imageCount(); i++)
-		{
-			vk::DescriptorBufferInfo bufferInfo{ uniformBuffers[i], 0, sizeof(UniformBufferObject) };
-			vk::DescriptorImageInfo imageInfo{ textureSampler, textureImageView, vk::ImageLayout::eShaderReadOnlyOptimal };
-			std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
-			device->device().updateDescriptorSets(descriptorWrites, 0);
-		}
-	}
-
 	void Engine::createCommandBuffers()
 	{
 		commandBuffers.resize(swapChain->imageCount());
@@ -452,7 +383,7 @@ namespace Solarium
 			std::vector<vk::DeviceSize> offsets = {0};
 			commandBuffers[i].bindVertexBuffers(0, vertexBuffers, offsets);
 			commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
-			commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSets[i], nullptr);
+			commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, uniformBufferObject->getDescriptorSets()[i], nullptr);
 			commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 			commandBuffers[i].endRenderPass();
 			commandBuffers[i].end();
@@ -480,7 +411,7 @@ namespace Solarium
 		}
 		swapChain->setImageInFlight(imageIndex, fences[currentFrame]);
 
-		updateUniformbuffer(imageIndex);
+		uniformBufferObject->updateUniformbuffer(imageIndex, swapChain, device);
 		vk::SubmitInfo submitInfo{};
 
 		vk::Semaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };
@@ -542,9 +473,6 @@ namespace Solarium
 
 		device = new Device{ *_platform };
 		swapChain = new SwapChain(*device, _platform->getExtent());
-		createUniformBuffers();
-		createDescriptorPool();
-		createDescriptorSets();
 		createPipelineLayout();
 		createPipeline();
 		createTextureImage();
@@ -552,9 +480,7 @@ namespace Solarium
 		createTextureSampler();
 		createVertexBuffer();
 		createIndexBuffer();
-		createUniformBuffers();
-		createDescriptorPool();
-		createDescriptorSets();
+		uniformBufferObject = new UBO(swapChain, device, textureSampler, textureImageView);
 		createCommandBuffers();
 
 		swapChain->getImagesInFlight().resize(swapChain->imageCount());
@@ -569,11 +495,11 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			device->device().destroyBuffer(uniformBuffers[i]);
-			device->device().freeMemory(uniformBuffersMemory[i]);
+			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers()[i]);
+			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory()[i]);
 		}
 
-		device->device().destroyDescriptorPool(descriptorPool);
+		device->device().destroyDescriptorPool(uniformBufferObject->getDescriptorPool());
 
 		device->device().freeCommandBuffers(device->getCommandPool(), commandBuffers);
 
@@ -604,7 +530,7 @@ namespace Solarium
 		device->device().destroy();
 		device->getInstance().destroySurfaceKHR(device->surface());
 		device->getInstance().destroy();
-
+		device->device().destroyDescriptorSetLayout(uniformBufferObject->getDescriptorSetLayout(), nullptr);
 		glfwDestroyWindow(_platform->GetWindow());
 
 		glfwTerminate();
