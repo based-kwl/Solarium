@@ -12,6 +12,7 @@ Solarium/obj/
 Solarium/out/
 Solarium/build/
 Solarium/Shaders/out/
+Solarium/Solarium/include/glm/out/
 
 # Windows Stuff
 *.ini
