@@ -32,7 +32,6 @@ namespace Solarium
 		return buffer;
 	}
 
-
 	Pipeline::~Pipeline()
 	{
 		ldevice.device().destroyShaderModule(vertShaderModule);
@@ -64,6 +63,7 @@ namespace Solarium
 
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		std::cout << shaderStages.size();
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
@@ -126,8 +126,8 @@ namespace Solarium
 		configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
 		configInfo.rasterizationInfo.polygonMode = vk::PolygonMode::eFill;
 		configInfo.rasterizationInfo.lineWidth = 1.0f;
-		configInfo.rasterizationInfo.cullMode = vk::CullModeFlagBits::eNone;
-		configInfo.rasterizationInfo.frontFace = vk::FrontFace::eClockwise; 
+		configInfo.rasterizationInfo.cullMode = vk::CullModeFlagBits::eBack;
+		configInfo.rasterizationInfo.frontFace = vk::FrontFace::eCounterClockwise; 
 		configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
 		configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
 		configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional

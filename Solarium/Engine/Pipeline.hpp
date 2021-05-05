@@ -8,8 +8,10 @@
 namespace Solarium
 {
 	struct Vertex {
-		glm::vec2 pos;
+		glm::vec3 pos;
 		glm::vec3 color;
+		glm::vec2 texCoord;
+
 		static vk::VertexInputBindingDescription getBindingDescription() {
 			vk::VertexInputBindingDescription bindingDescription{};
 			bindingDescription.binding = 0;
@@ -17,20 +19,10 @@ namespace Solarium
 			bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 			return bindingDescription;
 		}
-		static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
+
+		static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions()
 		{
-			std::array<vk::VertexInputAttributeDescription, 2> attributeDescription{};
-
-			attributeDescription[0].binding = 0;
-			attributeDescription[0].location = 0;
-			attributeDescription[0].format = vk::Format::eR32G32Sfloat;
-			attributeDescription[0].offset = offsetof(Vertex, pos);
-
-			attributeDescription[1].binding = 0;
-			attributeDescription[1].location = 1;
-			attributeDescription[1].format = vk::Format::eR32G32B32Sfloat;
-			attributeDescription[1].offset = offsetof(Vertex, color);
-			 
+			std::array<vk::VertexInputAttributeDescription, 3> attributeDescription{ vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos)}, vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color)}, vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord)} };
 			return attributeDescription;
 		}
 	};
