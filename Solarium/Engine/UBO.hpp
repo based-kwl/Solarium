@@ -16,22 +16,26 @@ namespace Solarium
 	class UBO
 	{
 	public:
-		UBO(SwapChain* swapChain, Device* device, vk::Sampler textureSampler, vk::ImageView textureImageView);
+		UBO(SwapChain* swapChain_, Device* device_);
 		~UBO();
 		UBO(const UBO&) = delete;
 		UBO& operator=(const UBO&) = delete;
 
-		void updateUniformbuffer(uint32_t currentImage, SwapChain* swapChain, Device* device);
+		void updateUniformbuffer(uint32_t currentImage);
 		vk::DescriptorPool getDescriptorPool() { return descriptorPool; }
 		std::vector<vk::DescriptorSet> getDescriptorSets() { return descriptorSets; }
 		vk::DescriptorSetLayout getDescriptorSetLayout() { return descriptorSetLayout; }
 		std::vector<vk::Buffer> getUniformBuffers() { return uniformBuffers; }
 		std::vector<vk::DeviceMemory> getUniformBuffersMemory() { return uniformBuffersMemory; }
+		void createChain(vk::Sampler textureSampler, vk::ImageView textureImageView);
 
 	private:
-		void createUniformBuffers(SwapChain* swapChain, Device* device);
-		void createDescriptorPool(SwapChain* swapChain, Device* device);
-		void createDescriptorSets(SwapChain* swapChain, Device* device, vk::Sampler textureSampler, vk::ImageView textureImageView);
+		Device* device;
+		SwapChain* swapChain;
+		void createDescriptorSetLayout();
+		void createUniformBuffers();
+		void createDescriptorPool();
+		void createDescriptorSets(vk::Sampler textureSampler, vk::ImageView textureImageView);
 		vk::DescriptorPool descriptorPool;
 		std::vector<vk::DescriptorSet> descriptorSets;
 		vk::DescriptorSetLayout descriptorSetLayout;

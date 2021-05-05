@@ -3,12 +3,28 @@
 
 namespace Solarium
 {
-	UBO::UBO(SwapChain* swapChain, Device* device, vk::Sampler textureSampler, vk::ImageView textureImageView) {
-		createUniformBuffers(swapChain, device);
-		createDescriptorPool(swapChain, device);
-		createDescriptorSets(swapChain, device, textureSampler, textureImageView);
+	UBO::UBO(SwapChain* swapChain_, Device* device_) {
+		swapChain = swapChain_;
+		device = device_;
 	}
-	void UBO::createUniformBuffers(Solarium::SwapChain* swapChain, Device* device)
+
+	void UBO::createDescriptorSetLayout()
+	{
+		vk::DescriptorSetLayoutBinding uboLayoutBinding{ 0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex };
+		vk::DescriptorSetLayoutBinding samplerLayoutBinding{ 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment };
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{ {}, bindings };
+
+		descriptorSetLayout = device->device().createDescriptorSetLayout(layoutInfo);
+	}
+
+	void UBO::createChain(vk::Sampler textureSampler, vk::ImageView textureImageView) {
+		createUniformBuffers();
+		createDescriptorPool();
+		createDescriptorSets(textureSampler, textureImageView);
+	}
+
+	void UBO::createUniformBuffers()
 	{
 		vk::DeviceSize deviceSize = sizeof(UniformBufferObject);
 
@@ -22,7 +38,7 @@ namespace Solarium
 	}
 
 
-	void UBO::updateUniformbuffer(uint32_t currentImage, SwapChain* swapChain, Device* device)
+	void UBO::updateUniformbuffer(uint32_t currentImage)
 	{
 		static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -41,7 +57,7 @@ namespace Solarium
 	}
 
 
-	void UBO::createDescriptorPool(SwapChain* swapChain, Device* device)
+	void UBO::createDescriptorPool()
 	{
 		std::array<vk::DescriptorPoolSize, 2> poolSizes{ vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount())}, vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(swapChain->imageCount())} };
 		vk::DescriptorPoolCreateInfo poolInfo{ {}, static_cast<uint32_t>(swapChain->imageCount()), poolSizes };
@@ -54,7 +70,7 @@ namespace Solarium
 	}
 
 
-	void UBO::createDescriptorSets(SwapChain* swapChain, Device* device, vk::Sampler textureSampler, vk::ImageView textureImageView)
+	void UBO::createDescriptorSets(vk::Sampler textureSampler, vk::ImageView textureImageView)
 	{
 		std::vector<vk::DescriptorSetLayout> layouts(swapChain->imageCount(), descriptorSetLayout);
 		vk::DescriptorSetAllocateInfo allocInfo{ descriptorPool, layouts };
