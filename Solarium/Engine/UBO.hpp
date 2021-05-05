@@ -29,6 +29,8 @@ namespace Solarium
 		std::vector<vk::DeviceMemory> getUniformBuffersMemory() { return uniformBuffersMemory; }
 		void createChain(vk::Sampler textureSampler, vk::ImageView textureImageView);
 
+		void update(SwapChain* swapChain_, Device* device_) { swapChain = swapChain_; device = device_; }
+
 	private:
 		Device* device;
 		SwapChain* swapChain;

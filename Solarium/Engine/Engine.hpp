@@ -10,6 +10,8 @@
 #include "SwapChain.hpp"
 #include "UBO.hpp"
 #include "Texture.hpp"
+#include "VertexBuffer.hpp"
+
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -39,14 +41,12 @@ namespace Solarium
 	private:
 
 		void createPipelineLayout();
-		void createPipeline();
-		void createVertexBuffer();
-		void createIndexBuffer();
+		void createPipeline();;
 		void createCommandBuffers();
 		void drawFrame();
 		void recreateSwapChain();
 		void cleanupSwapChain();
-
+		void updateAll();
 		void cleanup();
 
 		Platform* _platform;
@@ -55,13 +55,10 @@ namespace Solarium
 		Pipeline* pipeline;
 		UBO* uniformBufferObject;
 		Texture* texture;
+		VertexBuffer* vertexBuffer;
 		vk::PipelineLayout pipelineLayout;
 		std::vector<vk::CommandBuffer> commandBuffers;
-		vk::DeviceMemory vertexBufferMemory;
 		std::vector<vk::ImageView> swapChainImageViews;
-		vk::Buffer vertexBuffer;
-		vk::Buffer indexBuffer;
-		vk::DeviceMemory indexBufferMemory;
 		bool framebufferResized = false;
 	};
 }

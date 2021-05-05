@@ -1,24 +1,6 @@
 #include "Engine.hpp"
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 namespace Solarium
 {
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	};
-
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-	};
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
@@ -33,13 +15,14 @@ namespace Solarium
 		
 		device = new Device{ *_platform };
 		swapChain = new SwapChain(*device, _platform->getExtent());
-		texture = new Texture(swapChain, device);
 		uniformBufferObject = new UBO(swapChain, device);
+		texture = new Texture(swapChain, device);
+		vertexBuffer = new VertexBuffer(device);
+		texture->createImageViews();
 		createPipelineLayout();
 		createPipeline();
 		texture->createChain();
-		createVertexBuffer();
-		createIndexBuffer();
+		vertexBuffer->createChain();
 		uniformBufferObject->createChain(texture->getTextureSampler(), texture->getTextureImageView());
 		createCommandBuffers();
 	}
@@ -53,10 +36,10 @@ namespace Solarium
 		device->device().destroyImage(texture->getTextureImage());
 		device->device().freeMemory(texture->getTextureImageMemory());
 		device->device().destroyDescriptorSetLayout(uniformBufferObject->getDescriptorSetLayout());
-		device->device().destroyBuffer(indexBuffer);
+		device->device().destroyBuffer(vertexBuffer->getIndexBuffer());
 		device->device().freeMemory(texture->getIndexBufferMemory());
-		device->device().destroyBuffer(vertexBuffer);
-		device->device().freeMemory(vertexBufferMemory);
+		device->device().destroyBuffer(vertexBuffer->getVertexBuffer());
+		device->device().freeMemory(vertexBuffer->getVertexBufferMemory());
 	}
 
 	void Engine::Run()
@@ -100,43 +83,6 @@ namespace Solarium
 		pipeline = new Pipeline(*device, "../../../Shaders/out/Test_shader.vert.spv", "../../../Shaders/out/Test_shader.frag.spv", pipelineConfig);
 	}
 
-	void Engine::createVertexBuffer()
-	{
-		vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-		vk::Buffer stagingBuffer;
-		vk::DeviceMemory stagingBufferMemory;
-		BufferHelper::createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory, device);
-
-		void* data = device->device().mapMemory(stagingBufferMemory, 0, bufferSize, {});
-		memcpy(data, vertices.data(), (size_t)bufferSize);
-		device->device().unmapMemory(stagingBufferMemory);
-
-		BufferHelper::createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, vertexBuffer, vertexBufferMemory, device);
-		BufferHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, device);
-		device->device().destroyBuffer(stagingBuffer);
-		device->device().freeMemory(stagingBufferMemory);
-	}
-
-	void Engine::createIndexBuffer() {
-		vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-		vk::Buffer stagingBuffer;
-		vk::DeviceMemory stagingBufferMemory;
-		BufferHelper::createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory, device);
-
-		void* data = device->device().mapMemory(stagingBufferMemory, 0, bufferSize);
-		memcpy(data, indices.data(), (size_t)bufferSize);
-		device->device().unmapMemory(stagingBufferMemory);
-
-		BufferHelper::createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, indexBuffer, indexBufferMemory, device);
-
-		BufferHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, device);
-
-		device->device().destroyBuffer(stagingBuffer);
-		device->device().freeMemory(stagingBufferMemory);
-	}
-
 	void Engine::createCommandBuffers()
 	{
 		commandBuffers.resize(swapChain->imageCount());
@@ -171,12 +117,12 @@ namespace Solarium
 			commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
 			pipeline->bind(commandBuffers[i]);
-			std::vector<vk::Buffer> vertexBuffers = {vertexBuffer};
+			std::vector<vk::Buffer> vertexBuffers = { vertexBuffer->getVertexBuffer()};
 			std::vector<vk::DeviceSize> offsets = {0};
 			commandBuffers[i].bindVertexBuffers(0, vertexBuffers, offsets);
-			commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+			commandBuffers[i].bindIndexBuffer(vertexBuffer->getIndexBuffer(), 0, vk::IndexType::eUint16);
 			commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, uniformBufferObject->getDescriptorSets()[i], nullptr);
-			commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+			commandBuffers[i].drawIndexed(static_cast<uint32_t>(vertexBuffer->indices.size()), 1, 0, 0, 0);
 			commandBuffers[i].endRenderPass();
 			commandBuffers[i].end();
 		}
@@ -265,15 +211,21 @@ namespace Solarium
 
 		device = new Device{ *_platform };
 		swapChain = new SwapChain(*device, _platform->getExtent());
+		updateAll();
 		createPipelineLayout();
 		createPipeline();
 		texture->createChain();
-		createVertexBuffer();
-		createIndexBuffer();
+		vertexBuffer->createChain();
 		uniformBufferObject->createChain(texture->getTextureSampler(), texture->getTextureImageView());
 		createCommandBuffers();
 
 		swapChain->getImagesInFlight().resize(swapChain->imageCount());
+	}
+
+	void Engine::updateAll() {
+		texture->update(swapChain, device);
+		vertexBuffer->update(swapChain, device);
+		uniformBufferObject->update(swapChain, device);
 	}
 
 	void Engine::cleanupSwapChain()

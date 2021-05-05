@@ -1,4 +1,6 @@
 #include "Texture.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 namespace Solarium
 {
@@ -6,7 +8,6 @@ namespace Solarium
 	Texture::Texture(SwapChain* swapChain_, Device* device_) {
 		device = device_;
 		swapChain = swapChain_;
-		createImageViews();
 	}
 
 	void Texture::createChain() {

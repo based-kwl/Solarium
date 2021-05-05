@@ -4,7 +4,7 @@
 #include "Device.hpp"
 #include "SwapChain.hpp"
 #include "BufferHelper.hpp"
-#include <stb_image.h>
+
 
 namespace Solarium
 {
@@ -18,6 +18,7 @@ namespace Solarium
 		Texture& operator=(const Texture&) = delete;
 
 		void createChain();
+
 		vk::Sampler getTextureSampler() { return textureSampler; }
 		vk::DeviceMemory getIndexBufferMemory() { return indexBufferMemory; }
 		vk::ImageView getTextureImageView() { return textureImageView; };
@@ -25,11 +26,15 @@ namespace Solarium
 		vk::DeviceMemory getTextureImageMemory() { return textureImageMemory; }
 		std::vector<vk::ImageView> getSwapChainImageViews() { return swapChainImageViews; }
 
+		void update(SwapChain* swapChain_, Device* device_) { swapChain = swapChain_; device = device_; }
+
+		void createImageViews();
+
 	private:
+
 		vk::ImageView createImageView(vk::Image image, vk::Format format);
 		void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory);
 		void createTextureImage();
-		void createImageViews();
 		void createTextureImageView();
 		void createTextureSampler();
 		void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
