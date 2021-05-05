@@ -6,6 +6,7 @@ namespace Solarium
 	UBO::UBO(SwapChain* swapChain_, Device* device_) {
 		swapChain = swapChain_;
 		device = device_;
+		createDescriptorSetLayout();
 	}
 
 	void UBO::createDescriptorSetLayout()
