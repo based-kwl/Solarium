@@ -268,7 +268,7 @@ namespace Solarium
 		{
 			throw std::runtime_error("Failed to load texture image");
 		}
-
+		
 		createBuffer(imageSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
 
 		void* data = device->device().mapMemory(stagingBufferMemory, 0, imageSize);
@@ -547,6 +547,14 @@ namespace Solarium
 		createDescriptorSets();
 		createPipelineLayout();
 		createPipeline();
+		createTextureImage();
+		createTextureImageView();
+		createTextureSampler();
+		createVertexBuffer();
+		createIndexBuffer();
+		createUniformBuffers();
+		createDescriptorPool();
+		createDescriptorSets();
 		createCommandBuffers();
 
 		swapChain->getImagesInFlight().resize(swapChain->imageCount());
