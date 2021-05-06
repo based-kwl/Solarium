@@ -27,18 +27,18 @@ namespace Solarium
 
 	void UBO::createUniformBuffers()
 	{
-		vk::DeviceSize deviceSize = sizeof(UBOmvp);
-		vk::DeviceSize secDeviceSize = sizeof(UBOcolor);
+		vk::DeviceSize deviceSize = sizeof(structUBOmvp);
+		vk::DeviceSize secDeviceSize = sizeof(structUBOtest);
 
 
-		UBOcolor.resize(swapChain->imageCount());
+		UBOtest.resize(swapChain->imageCount());
 		UBOmvp.resize(swapChain->imageCount());
-		UBOcolorMemory.resize(swapChain->imageCount());
+		UBOtestMemory.resize(swapChain->imageCount());
 		UBOmvpMemory.resize(swapChain->imageCount());
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOcolor[i], UBOcolorMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOtest[i], UBOtestMemory[i], device);
 			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOmvp[i], UBOmvpMemory[i], device);
 		}
 	}
@@ -56,9 +56,9 @@ namespace Solarium
 			}
 			case (UBOType::COLOR):
 			{
-				void* data = device->device().mapMemory(UBOcolorMemory[currentImage], 0, sizeof(ubolist.color));
-				memcpy(data, &ubolist.color, sizeof(ubolist.color));
-				device->device().unmapMemory(UBOcolorMemory[currentImage]);
+				void* data = device->device().mapMemory(UBOtestMemory[currentImage], 0, sizeof(ubolist.test));
+				memcpy(data, &ubolist.test, sizeof(ubolist.test));
+				device->device().unmapMemory(UBOtestMemory[currentImage]);
 				break;
 			}
 		}
@@ -92,8 +92,8 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			vk::DescriptorBufferInfo bufferInfo{ UBOmvp[i], 0, sizeof(UBOmvp) };
-			vk::DescriptorBufferInfo bufferInfo2{ UBOcolor[i], 0, sizeof(UBOcolor) };
+			vk::DescriptorBufferInfo bufferInfo{ UBOmvp[i], 0, sizeof(structUBOmvp) };
+			vk::DescriptorBufferInfo bufferInfo2{ UBOtest[i], 0, sizeof(structUBOtest) };
 			vk::DescriptorImageInfo imageInfo{ textureSampler, textureImageView, vk::ImageLayout::eShaderReadOnlyOptimal };
 			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 2, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo2}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
 			device->device().updateDescriptorSets(descriptorWrites, 0);

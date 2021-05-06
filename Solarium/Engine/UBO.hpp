@@ -17,21 +17,19 @@ namespace Solarium
 		COLOR
 	}UBOType;
 
-	struct UBOmvp {
+	struct structUBOmvp {
 		alignas(16) glm::mat4 model;
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;
 	};
 
-	struct UBOcolor {
-		alignas(16) glm::vec4 inPosition;
-		alignas(16) glm::vec4 inColor;
-		alignas(8)	glm::vec2 inTexCoord;
+	struct structUBOtest {
+		alignas(16) glm::mat4 test;
 	};
 
 	struct UBOlist {
-		UBOmvp mvp;
-		UBOcolor color;
+		structUBOmvp mvp;
+		structUBOtest test;
 	};
 
 	class UBO
@@ -57,7 +55,7 @@ namespace Solarium
 				}
 				case(UBOType::COLOR):
 				{
-					return UBOcolor;
+					return UBOtest;
 				}
 			}
 		}
@@ -73,7 +71,7 @@ namespace Solarium
 			}
 			case(UBOType::COLOR):
 			{
-				return UBOcolorMemory;
+				return UBOtestMemory;
 			}
 			}
 		}
@@ -93,8 +91,8 @@ namespace Solarium
 		std::vector <vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
 		vk::DescriptorSetLayout descriptorSetLayout;
 		std::vector<vk::Buffer> UBOmvp;
-		std::vector<vk::Buffer> UBOcolor;
+		std::vector<vk::Buffer> UBOtest;
 		std::vector<vk::DeviceMemory> UBOmvpMemory;
-		std::vector<vk::DeviceMemory> UBOcolorMemory;
+		std::vector<vk::DeviceMemory> UBOtestMemory;
 	};
 }
