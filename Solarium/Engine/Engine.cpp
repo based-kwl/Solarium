@@ -209,10 +209,7 @@ namespace Solarium
 		ubos.mvp.model = glm::rotate(glm::mat4(1.0f), Engine::getdt() * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubos.mvp.view = glm::mat4();
 		ubos.mvp.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
-		ubos.mvp.proj[1][1] *= -1;
-		ubos.color.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		uniformBufferObject->updateUniformbuffer(imageIndex, UBOType::MVP, ubos);
-
 	}
 
 	void Engine::recreateSwapChain()

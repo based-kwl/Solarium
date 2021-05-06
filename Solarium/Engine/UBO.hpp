@@ -17,19 +17,21 @@ namespace Solarium
 		COLOR
 	}UBOType;
 
-	struct structUBOmvp {
+	struct UBOmvp {
 		alignas(16) glm::mat4 model;
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;
 	};
 
-	struct structUBOcolor {
-		alignas(16) glm::mat4 view;
+	struct UBOcolor {
+		alignas(16) glm::vec4 inPosition;
+		alignas(16) glm::vec4 inColor;
+		alignas(8)	glm::vec2 inTexCoord;
 	};
 
 	struct UBOlist {
-		structUBOmvp mvp;
-		structUBOcolor color;
+		UBOmvp mvp;
+		UBOcolor color;
 	};
 
 	class UBO

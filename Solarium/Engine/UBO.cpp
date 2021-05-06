@@ -27,8 +27,8 @@ namespace Solarium
 
 	void UBO::createUniformBuffers()
 	{
-		vk::DeviceSize UBOmvpSize = sizeof(UBOmvp);
-		vk::DeviceSize UBOcolorSize = sizeof(UBOcolor);
+		vk::DeviceSize deviceSize = sizeof(UBOmvp);
+		vk::DeviceSize secDeviceSize = sizeof(UBOcolor);
 
 
 		UBOcolor.resize(swapChain->imageCount());
@@ -38,27 +38,30 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			BufferHelper::createBuffer(UBOcolorSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOcolor[i], UBOcolorMemory[i], device);
-			BufferHelper::createBuffer(UBOmvpSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOmvp[i], UBOmvpMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOcolor[i], UBOcolorMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOmvp[i], UBOmvpMemory[i], device);
 		}
 	}
 
 	void UBO::updateUniformbuffer(uint32_t currentImage, UBOType type, UBOlist ubolist)
 	{
-		structUBOmvp ubo{};
-		structUBOcolor ubo2{};
-		ubo2.view = ubolist.color.view;
-		ubo.model = ubolist.mvp.model;
-		ubo.view = ubolist.mvp.view;
-		ubo.proj = ubolist.mvp.proj;
-		ubo.proj[1][1] *= -1;
-
-		void* secUBOMem = device->device().mapMemory(UBOcolorMemory[currentImage], 0, sizeof(ubo2));
-		memcpy(secUBOMem, &ubo2, sizeof(ubo2));
-		device->device().unmapMemory(UBOcolorMemory[currentImage]);
-		void* data = device->device().mapMemory(UBOmvpMemory[currentImage], 0, sizeof(ubo));
-		memcpy(data, &ubo, sizeof(ubo));
-		device->device().unmapMemory(UBOmvpMemory[currentImage]);
+		switch (type)
+		{
+			case (UBOType::MVP):
+			{
+				void* data = device->device().mapMemory(UBOmvpMemory[currentImage], 0, sizeof(ubolist.mvp));
+				memcpy(data, &ubolist.mvp, sizeof(ubolist.mvp));
+				device->device().unmapMemory(UBOmvpMemory[currentImage]);
+				break;
+			}
+			case (UBOType::COLOR):
+			{
+				void* data = device->device().mapMemory(UBOcolorMemory[currentImage], 0, sizeof(ubolist.color));
+				memcpy(data, &ubolist.color, sizeof(ubolist.color));
+				device->device().unmapMemory(UBOcolorMemory[currentImage]);
+				break;
+			}
+		}
 		
 	}
 
