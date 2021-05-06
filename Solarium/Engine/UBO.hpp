@@ -13,23 +13,28 @@
 namespace Solarium
 {
 	typedef enum class UBOType{
-		MVP,
-		COLOR
+		VIEWMODEL,
+		CAMERA
 	}UBOType;
 
-	struct structUBOmvp {
+	struct structUBOviewmodel {
 		alignas(16) glm::mat4 model;
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;
+		alignas(16) glm::vec3 rotation;
+		alignas(16) glm::vec3 position;
+		alignas(16) glm::vec4 viewPos;
 	};
 
-	struct structUBOtest {
-		alignas(16) glm::mat4 test;
+	struct structUBOcamera {
+		alignas(16) glm::vec3 rotation;
+		alignas(16) glm::vec3 position;
+		alignas(16) glm::vec4 viewPos;
 	};
 
 	struct UBOlist {
-		structUBOmvp mvp;
-		structUBOtest test;
+		structUBOviewmodel viewmodel;
+		structUBOcamera camera;
 	};
 
 	class UBO
@@ -49,13 +54,13 @@ namespace Solarium
 		{
 			switch (type)
 			{
-				case(UBOType::MVP):
+				case(UBOType::VIEWMODEL):
 				{
-					return UBOmvp;
+					return UBOviewmodel;
 				}
-				case(UBOType::COLOR):
+				case(UBOType::CAMERA):
 				{
-					return UBOtest;
+					return UBOcamera;
 				}
 			}
 		}
@@ -65,13 +70,13 @@ namespace Solarium
 		{
 			switch (type)
 			{
-			case(UBOType::MVP):
+			case(UBOType::VIEWMODEL):
 			{
-				return UBOmvpMemory;
+				return UBOviewmodelMemory;
 			}
-			case(UBOType::COLOR):
+			case(UBOType::CAMERA):
 			{
-				return UBOtestMemory;
+				return UBOcameraMemory;
 			}
 			}
 		}
@@ -90,9 +95,9 @@ namespace Solarium
 		std::vector<vk::DescriptorSet> descriptorSets;
 		std::vector <vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
 		vk::DescriptorSetLayout descriptorSetLayout;
-		std::vector<vk::Buffer> UBOmvp;
-		std::vector<vk::Buffer> UBOtest;
-		std::vector<vk::DeviceMemory> UBOmvpMemory;
-		std::vector<vk::DeviceMemory> UBOtestMemory;
+		std::vector<vk::Buffer> UBOviewmodel;
+		std::vector<vk::Buffer> UBOcamera;
+		std::vector<vk::DeviceMemory> UBOviewmodelMemory;
+		std::vector<vk::DeviceMemory> UBOcameraMemory;
 	};
 }

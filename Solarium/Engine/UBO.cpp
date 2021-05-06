@@ -27,19 +27,19 @@ namespace Solarium
 
 	void UBO::createUniformBuffers()
 	{
-		vk::DeviceSize deviceSize = sizeof(structUBOmvp);
-		vk::DeviceSize secDeviceSize = sizeof(structUBOtest);
+		vk::DeviceSize deviceSize = sizeof(structUBOviewmodel);
+		vk::DeviceSize secDeviceSize = sizeof(structUBOcamera);
 
 
-		UBOtest.resize(swapChain->imageCount());
-		UBOmvp.resize(swapChain->imageCount());
-		UBOtestMemory.resize(swapChain->imageCount());
-		UBOmvpMemory.resize(swapChain->imageCount());
+		UBOcamera.resize(swapChain->imageCount());
+		UBOviewmodel.resize(swapChain->imageCount());
+		UBOcameraMemory.resize(swapChain->imageCount());
+		UBOviewmodelMemory.resize(swapChain->imageCount());
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOtest[i], UBOtestMemory[i], device);
-			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOmvp[i], UBOmvpMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOcamera[i], UBOcameraMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOviewmodel[i], UBOviewmodelMemory[i], device);
 		}
 	}
 
@@ -47,18 +47,18 @@ namespace Solarium
 	{
 		switch (type)
 		{
-			case (UBOType::MVP):
+			case (UBOType::VIEWMODEL):
 			{
-				void* data = device->device().mapMemory(UBOmvpMemory[currentImage], 0, sizeof(ubolist.mvp));
-				memcpy(data, &ubolist.mvp, sizeof(ubolist.mvp));
-				device->device().unmapMemory(UBOmvpMemory[currentImage]);
+				void* data = device->device().mapMemory(UBOviewmodelMemory[currentImage], 0, sizeof(ubolist.viewmodel));
+				memcpy(data, &ubolist.viewmodel, sizeof(ubolist.viewmodel));
+				device->device().unmapMemory(UBOviewmodelMemory[currentImage]);
 				break;
 			}
-			case (UBOType::COLOR):
+			case (UBOType::CAMERA):
 			{
-				void* data = device->device().mapMemory(UBOtestMemory[currentImage], 0, sizeof(ubolist.test));
-				memcpy(data, &ubolist.test, sizeof(ubolist.test));
-				device->device().unmapMemory(UBOtestMemory[currentImage]);
+				void* data = device->device().mapMemory(UBOcameraMemory[currentImage], 0, sizeof(ubolist.camera));
+				memcpy(data, &ubolist.camera, sizeof(ubolist.camera));
+				device->device().unmapMemory(UBOcameraMemory[currentImage]);
 				break;
 			}
 		}
@@ -92,8 +92,8 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			vk::DescriptorBufferInfo bufferInfo{ UBOmvp[i], 0, sizeof(structUBOmvp) };
-			vk::DescriptorBufferInfo bufferInfo2{ UBOtest[i], 0, sizeof(structUBOtest) };
+			vk::DescriptorBufferInfo bufferInfo{ UBOviewmodel[i], 0, sizeof(structUBOviewmodel) };
+			vk::DescriptorBufferInfo bufferInfo2{ UBOcamera[i], 0, sizeof(structUBOcamera) };
 			vk::DescriptorImageInfo imageInfo{ textureSampler, textureImageView, vk::ImageLayout::eShaderReadOnlyOptimal };
 			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 2, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo2}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
 			device->device().updateDescriptorSets(descriptorWrites, 0);
