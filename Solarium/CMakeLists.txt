@@ -10,7 +10,7 @@ link_directories(lib)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add source to this project's executable.
-add_executable (Solarium "Defines.hpp" "Typedef.h" "Engine/Solarium.cpp" "Engine/Solarium.hpp" "Engine/Logger.cpp" "Engine/Logger.hpp"  "Engine/Platform.cpp" "Engine/Platform.hpp"  "Engine/Engine.cpp" "Engine/Engine.hpp" "Engine/Device.hpp" "Engine/Device.cpp" "Engine/Pipeline.hpp" "Engine/Pipeline.cpp" "Engine/SwapChain.hpp" "Engine/SwapChain.cpp" "Engine/ShaderHelper.cpp" "Engine/ShaderHelper.hpp" "Engine/UBO.cpp" "Engine/UBO.hpp"  "Engine/BufferHelper.hpp" "Engine/BufferHelper.cpp" "Engine/Texture.cpp" "Engine/Texture.hpp" "Engine/VertexBuffer.hpp" "Engine/VertexBuffer.cpp" "Engine/Camera.cpp" "Engine/Camera.hpp")
+add_executable (Solarium "Defines.hpp" "Typedef.h" "Engine/Solarium.cpp" "Engine/Solarium.hpp" "Engine/Logger.cpp" "Engine/Logger.hpp"  "Engine/Platform.cpp" "Engine/Platform.hpp"  "Engine/Engine.cpp" "Engine/Engine.hpp" "Engine/Device.hpp" "Engine/Device.cpp" "Engine/Pipeline.hpp" "Engine/Pipeline.cpp" "Engine/SwapChain.hpp" "Engine/SwapChain.cpp" "Engine/ShaderHelper.cpp" "Engine/ShaderHelper.hpp" "Engine/UBO.cpp" "Engine/UBO.hpp"  "Engine/BufferHelper.hpp" "Engine/BufferHelper.cpp" "Engine/Texture.cpp" "Engine/Texture.hpp" "Engine/VertexBuffer.hpp" "Engine/VertexBuffer.cpp")
 target_link_libraries(Solarium vulkan-1 glfw3 shaderc_combined)
 
 # TODO: Add tests and install targets if needed.

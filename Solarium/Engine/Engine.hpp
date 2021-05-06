@@ -50,8 +50,6 @@ namespace Solarium
 		void updateAll();
 		void cleanup();
 
-		void updateUniformBuffers(uint32_t imageIndex);
-
 		Platform* _platform;
 		Device* device;
 		SwapChain* swapChain;
@@ -61,9 +59,9 @@ namespace Solarium
 		VertexBuffer* vertexBuffer;
 		vk::PipelineLayout pipelineLayout;
 		std::vector<vk::CommandBuffer> commandBuffers;
+		SecondaryUniformBufferObject ubo2;
 		std::vector<vk::ImageView> swapChainImageViews;
 		bool framebufferResized = false;
-
-		UBOlist ubos;
+		UniformBufferObject ubo;
 	};
 }
