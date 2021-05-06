@@ -35,7 +35,8 @@ namespace Solarium
 		void Run();
 
 		void OnLoop(const uint32_t deltaTime);
-
+		
+		float getdt();
 		bool getFramebufferResized() { return framebufferResized; }
 		void setFramebufferResized(bool resized) { framebufferResized = resized; }
 	private:
@@ -58,7 +59,9 @@ namespace Solarium
 		VertexBuffer* vertexBuffer;
 		vk::PipelineLayout pipelineLayout;
 		std::vector<vk::CommandBuffer> commandBuffers;
+		SecondaryUniformBufferObject ubo2;
 		std::vector<vk::ImageView> swapChainImageViews;
 		bool framebufferResized = false;
+		UniformBufferObject ubo;
 	};
 }

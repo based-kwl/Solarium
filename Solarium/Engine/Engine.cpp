@@ -62,6 +62,15 @@ namespace Solarium
 
 	}
 
+
+	float Engine::getdt()
+	{
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		return std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	}
+
 	void Engine::createPipelineLayout()
 	{
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -148,8 +157,11 @@ namespace Solarium
 			device->device().waitForFences(images[imageIndex], VK_TRUE, UINT64_MAX);
 		}
 		swapChain->setImageInFlight(imageIndex, fences[currentFrame]);
-
-		uniformBufferObject->updateUniformbuffer(imageIndex);
+		ubo.model = glm::rotate(glm::mat4(1.0f), Engine::getdt() *glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::mat4();
+		ubo.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
+		ubo2.view = glm::lookAt(glm::vec3(3.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		uniformBufferObject->updateUniformbuffer(imageIndex, ubo, ubo2);
 		vk::SubmitInfo submitInfo{};
 
 		vk::Semaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };

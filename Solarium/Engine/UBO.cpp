@@ -6,15 +6,15 @@ namespace Solarium
 	UBO::UBO(SwapChain* swapChain_, Device* device_) {
 		swapChain = swapChain_;
 		device = device_;
+		depositDescriptorSetBinding({ 0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex });
+		depositDescriptorSetBinding({ 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment });
+		depositDescriptorSetBinding({ 2, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex });
 		createDescriptorSetLayout();
 	}
 
 	void UBO::createDescriptorSetLayout()
 	{
-		vk::DescriptorSetLayoutBinding uboLayoutBinding{ 0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex };
-		vk::DescriptorSetLayoutBinding samplerLayoutBinding{ 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment };
-		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-		vk::DescriptorSetLayoutCreateInfo layoutInfo{ {}, bindings };
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{ {}, descriptorSetLayoutBindings };
 
 		descriptorSetLayout = device->device().createDescriptorSetLayout(layoutInfo);
 	}
@@ -28,39 +28,43 @@ namespace Solarium
 	void UBO::createUniformBuffers()
 	{
 		vk::DeviceSize deviceSize = sizeof(UniformBufferObject);
+		vk::DeviceSize secDeviceSize = sizeof(SecondaryUniformBufferObject);
 
+
+		secondaryUniformBuffers.resize(swapChain->imageCount());
 		uniformBuffers.resize(swapChain->imageCount());
+		secondaryUniformBuffersMemory.resize(swapChain->imageCount());
 		uniformBuffersMemory.resize(swapChain->imageCount());
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, secondaryUniformBuffers[i], secondaryUniformBuffersMemory[i], device);
 			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[i], uniformBuffersMemory[i], device);
 		}
 	}
 
 
-	void UBO::updateUniformbuffer(uint32_t currentImage)
+	void UBO::updateUniformbuffer(uint32_t currentImage, UniformBufferObject cameraMatrices, SecondaryUniformBufferObject secUBO)
 	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
-
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
+		SecondaryUniformBufferObject ubo2{};
+		ubo2.view = secUBO.view;
+		ubo.model = cameraMatrices.model;
+		ubo.view = cameraMatrices.view;
+		ubo.proj = cameraMatrices.proj;
 		ubo.proj[1][1] *= -1;
 
+		void* secUBOMem = device->device().mapMemory(secondaryUniformBuffersMemory[currentImage], 0, sizeof(ubo));
+		memcpy(secUBOMem, &ubo2, sizeof(ubo2));
+		device->device().unmapMemory(secondaryUniformBuffersMemory[currentImage]);
 		void* data = device->device().mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
 		memcpy(data, &ubo, sizeof(ubo));
 		device->device().unmapMemory(uniformBuffersMemory[currentImage]);
 	}
 
-
 	void UBO::createDescriptorPool()
 	{
-		std::array<vk::DescriptorPoolSize, 2> poolSizes{ vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount())}, vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(swapChain->imageCount())} };
+		std::array<vk::DescriptorPoolSize, 3> poolSizes{ vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount())}, vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(swapChain->imageCount())}, vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(swapChain->imageCount())} };
 		vk::DescriptorPoolCreateInfo poolInfo{ {}, static_cast<uint32_t>(swapChain->imageCount()), poolSizes };
 
 		descriptorPool = device->device().createDescriptorPool(poolInfo);
@@ -86,8 +90,9 @@ namespace Solarium
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
 			vk::DescriptorBufferInfo bufferInfo{ uniformBuffers[i], 0, sizeof(UniformBufferObject) };
+			vk::DescriptorBufferInfo bufferInfo2{ secondaryUniformBuffers[i], 0, sizeof(SecondaryUniformBufferObject) };
 			vk::DescriptorImageInfo imageInfo{ textureSampler, textureImageView, vk::ImageLayout::eShaderReadOnlyOptimal };
-			std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
+			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 2, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo2}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
 			device->device().updateDescriptorSets(descriptorWrites, 0);
 		}
 	}
