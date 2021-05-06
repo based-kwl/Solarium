@@ -62,6 +62,15 @@ namespace Solarium
 
 	}
 
+
+	float Engine::getdt()
+	{
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		return std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	}
+
 	void Engine::createPipelineLayout()
 	{
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -148,8 +157,8 @@ namespace Solarium
 			device->device().waitForFences(images[imageIndex], VK_TRUE, UINT64_MAX);
 		}
 		swapChain->setImageInFlight(imageIndex, fences[currentFrame]);
+		updateUniformBuffers(imageIndex);
 
-		uniformBufferObject->updateUniformbuffer(imageIndex);
 		vk::SubmitInfo submitInfo{};
 
 		vk::Semaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };
@@ -195,6 +204,18 @@ namespace Solarium
 
 	}
 
+	void Engine::updateUniformBuffers(uint32_t imageIndex)
+	{
+		ubos.viewmodel.model = glm::rotate(glm::mat4(1.0f), Engine::getdt() * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubos.viewmodel.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubos.viewmodel.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
+		ubos.viewmodel.proj[1][1] *= -1;
+		ubos.viewmodel.rotation = glm::vec3();
+		ubos.viewmodel.position = glm::vec3();
+		ubos.viewmodel.viewPos = glm::vec4();
+		uniformBufferObject->updateUniformbuffer(imageIndex, UBOType::VIEWMODEL, ubos);
+	}
+
 	void Engine::recreateSwapChain()
 	{
 		Solarium::Logger::Log("Resizing");
@@ -237,8 +258,10 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers()[i]);
-			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory()[i]);
+			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers(UBOType::VIEWMODEL)[i]);
+			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory(UBOType::VIEWMODEL)[i]);
+			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers(UBOType::CAMERA)[i]);
+			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory(UBOType::CAMERA)[i]);
 		}
 
 		device->device().destroyDescriptorPool(uniformBufferObject->getDescriptorPool());

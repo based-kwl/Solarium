@@ -2,11 +2,16 @@
 #extension GL_KHR_vulkan_glsl : enable
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform UBOmvp {
     mat4 model;
     mat4 view;
     mat4 proj;
 } ubo;
+layout(binding = 2) uniform UBOcolor{
+    vec3 rotation;
+    vec3 position;
+    vec4 viewPost;
+} ubso;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
