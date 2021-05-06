@@ -157,11 +157,8 @@ namespace Solarium
 			device->device().waitForFences(images[imageIndex], VK_TRUE, UINT64_MAX);
 		}
 		swapChain->setImageInFlight(imageIndex, fences[currentFrame]);
-		ubo.model = glm::rotate(glm::mat4(1.0f), Engine::getdt() *glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::mat4();
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
-		ubo2.view = glm::lookAt(glm::vec3(3.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		uniformBufferObject->updateUniformbuffer(imageIndex, ubo, ubo2);
+		updateUniformBuffers(imageIndex);
+
 		vk::SubmitInfo submitInfo{};
 
 		vk::Semaphore waitSemaphores[] = { (swapChain->getImageSemaphores())[currentFrame] };
@@ -207,6 +204,14 @@ namespace Solarium
 
 	}
 
+	void Engine::updateUniformBuffers(uint32_t imageIndex)
+	{
+		ubos.mvp.model = glm::rotate(glm::mat4(1.0f), Engine::getdt() * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubos.mvp.view = glm::mat4();
+		ubos.mvp.proj = glm::perspective(glm::radians(45.0f), swapChain->width() / (float)swapChain->height(), 0.1f, 10.0f);
+		uniformBufferObject->updateUniformbuffer(imageIndex, UBOType::MVP, ubos);
+	}
+
 	void Engine::recreateSwapChain()
 	{
 		Solarium::Logger::Log("Resizing");
@@ -249,8 +254,10 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers()[i]);
-			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory()[i]);
+			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers(UBOType::MVP)[i]);
+			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory(UBOType::MVP)[i]);
+			device->device().destroyBuffer(uniformBufferObject->getUniformBuffers(UBOType::COLOR)[i]);
+			device->device().freeMemory(uniformBufferObject->getUniformBuffersMemory(UBOType::COLOR)[i]);
 		}
 
 		device->device().destroyDescriptorPool(uniformBufferObject->getDescriptorPool());

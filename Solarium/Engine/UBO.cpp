@@ -27,39 +27,42 @@ namespace Solarium
 
 	void UBO::createUniformBuffers()
 	{
-		vk::DeviceSize deviceSize = sizeof(UniformBufferObject);
-		vk::DeviceSize secDeviceSize = sizeof(SecondaryUniformBufferObject);
+		vk::DeviceSize deviceSize = sizeof(UBOmvp);
+		vk::DeviceSize secDeviceSize = sizeof(UBOcolor);
 
 
-		secondaryUniformBuffers.resize(swapChain->imageCount());
-		uniformBuffers.resize(swapChain->imageCount());
-		secondaryUniformBuffersMemory.resize(swapChain->imageCount());
-		uniformBuffersMemory.resize(swapChain->imageCount());
+		UBOcolor.resize(swapChain->imageCount());
+		UBOmvp.resize(swapChain->imageCount());
+		UBOcolorMemory.resize(swapChain->imageCount());
+		UBOmvpMemory.resize(swapChain->imageCount());
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, secondaryUniformBuffers[i], secondaryUniformBuffersMemory[i], device);
-			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[i], uniformBuffersMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOcolor[i], UBOcolorMemory[i], device);
+			BufferHelper::createBuffer(deviceSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, UBOmvp[i], UBOmvpMemory[i], device);
 		}
 	}
 
-
-	void UBO::updateUniformbuffer(uint32_t currentImage, UniformBufferObject cameraMatrices, SecondaryUniformBufferObject secUBO)
+	void UBO::updateUniformbuffer(uint32_t currentImage, UBOType type, UBOlist ubolist)
 	{
-		UniformBufferObject ubo{};
-		SecondaryUniformBufferObject ubo2{};
-		ubo2.view = secUBO.view;
-		ubo.model = cameraMatrices.model;
-		ubo.view = cameraMatrices.view;
-		ubo.proj = cameraMatrices.proj;
-		ubo.proj[1][1] *= -1;
-
-		void* secUBOMem = device->device().mapMemory(secondaryUniformBuffersMemory[currentImage], 0, sizeof(ubo));
-		memcpy(secUBOMem, &ubo2, sizeof(ubo2));
-		device->device().unmapMemory(secondaryUniformBuffersMemory[currentImage]);
-		void* data = device->device().mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
-		memcpy(data, &ubo, sizeof(ubo));
-		device->device().unmapMemory(uniformBuffersMemory[currentImage]);
+		switch (type)
+		{
+			case (UBOType::MVP):
+			{
+				void* data = device->device().mapMemory(UBOmvpMemory[currentImage], 0, sizeof(ubolist.mvp));
+				memcpy(data, &ubolist.mvp, sizeof(ubolist.mvp));
+				device->device().unmapMemory(UBOmvpMemory[currentImage]);
+				break;
+			}
+			case (UBOType::COLOR):
+			{
+				void* data = device->device().mapMemory(UBOcolorMemory[currentImage], 0, sizeof(ubolist.color));
+				memcpy(data, &ubolist.color, sizeof(ubolist.color));
+				device->device().unmapMemory(UBOcolorMemory[currentImage]);
+				break;
+			}
+		}
+		
 	}
 
 	void UBO::createDescriptorPool()
@@ -89,8 +92,8 @@ namespace Solarium
 
 		for (size_t i = 0; i < swapChain->imageCount(); i++)
 		{
-			vk::DescriptorBufferInfo bufferInfo{ uniformBuffers[i], 0, sizeof(UniformBufferObject) };
-			vk::DescriptorBufferInfo bufferInfo2{ secondaryUniformBuffers[i], 0, sizeof(SecondaryUniformBufferObject) };
+			vk::DescriptorBufferInfo bufferInfo{ UBOmvp[i], 0, sizeof(UBOmvp) };
+			vk::DescriptorBufferInfo bufferInfo2{ UBOcolor[i], 0, sizeof(UBOcolor) };
 			vk::DescriptorImageInfo imageInfo{ textureSampler, textureImageView, vk::ImageLayout::eShaderReadOnlyOptimal };
 			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ vk::WriteDescriptorSet{descriptorSets[i], 0, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo}, vk::WriteDescriptorSet{descriptorSets[i], 2, 0, vk::DescriptorType::eUniformBuffer, nullptr, bufferInfo2}, vk::WriteDescriptorSet{descriptorSets[i], 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo } };
 			device->device().updateDescriptorSets(descriptorWrites, 0);
